@@ -20,13 +20,13 @@ public class ToolsDefinition
     public string ScriptPath { get; set; }
     public ScriptMeta Meta { get; set; }
 
-    public string Description => Meta?.Description;
+    public string Description => Meta?.Description ?? string.Empty;
     public ToolsCategory Category => Meta?.Category ?? ToolsCategory.All;
     public List<string> Options => Meta?.Options ?? new List<string>();
     public bool SupportsInput => Meta?.SupportsInput ?? false;
-    public string InputPlaceholder => Meta?.InputPlaceholder;
-    public string PoweredByText => Meta?.PoweredByText;
-    public string PoweredByUrl => Meta?.PoweredByUrl;
+    public string InputPlaceholder => Meta?.InputPlaceholder ?? string.Empty;
+    public string PoweredByText => Meta?.PoweredByText ?? string.Empty;
+    public string PoweredByUrl => Meta?.PoweredByUrl ?? string.Empty;
     public bool UseConsole => Meta?.UseConsole ?? false;
     public bool UseLog => Meta?.UseLog ?? false;
 
@@ -39,6 +39,10 @@ public class ToolsDefinition
     }
     public ToolsDefinition()
     {
+        Title = string.Empty;
+        Icon = string.Empty;
+        ScriptPath = string.Empty;
+        Meta = new ScriptMeta();
     }
 }
 
