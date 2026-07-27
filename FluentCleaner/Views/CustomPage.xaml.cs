@@ -288,6 +288,7 @@ public sealed partial class CustomPage : Page, IPageActions, ISearchablePage
         }
         catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine(ex);
             lblStatus.Text = $"{vm.Name}: error — {ex.Message}";
             return;
         }
