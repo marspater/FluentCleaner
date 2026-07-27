@@ -107,7 +107,7 @@ public class CleaningService
         if (!recurse) yield break;
 
         IEnumerable<string> dirs;
-        //!FIX!Skip reparse points (junctions & symlinks);Windows ships with traps like
+        // Skip reparse points (junctions & symlinks);Windows ships with traps like
         //C:\Users\All Users >> C:\ProgramData >>> All Users >>...forever ;)
         //Real content is always reachable via the canonical path;no need to follow aliases
         try
