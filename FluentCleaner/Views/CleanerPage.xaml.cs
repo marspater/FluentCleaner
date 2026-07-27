@@ -78,7 +78,7 @@ public sealed partial class CleanerPage : Page, ISearchablePage, IPageActions
     {
         if (e.ClickedItem is not DetailLine { IsHeader: false } line) return;
         var path = line.Text;
-        if (string.IsNullOrWhiteSpace(path) || path.StartsWith("HK", StringComparison.OrdinalIgnoreCase)) return;
+        if (string.IsNullOrWhiteSpace(path) || path.Contains('"') || path.StartsWith("HK", StringComparison.OrdinalIgnoreCase)) return;
 
         System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{path}\"");
     }
