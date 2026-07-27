@@ -123,7 +123,13 @@ public class PathExpander
                     ResolveRecursive(Path.Combine(match, string.Join('\\', remaining)), results);
             }
         }
-        catch (UnauthorizedAccessException) { }
-        catch (IOException) { }
+        catch (UnauthorizedAccessException ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"PathExpander: Unauthorized access to {basePath}\\{wildcard} - {ex.Message}");
+        }
+        catch (IOException ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"PathExpander: IO error accessing {basePath}\\{wildcard} - {ex.Message}");
+        }
     }
 }
