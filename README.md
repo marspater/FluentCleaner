@@ -1,5 +1,9 @@
+# FluentCleaner
+
+## Modern, transparent, no spyware, no scareware, no dark patterns, no upsell garbage
+
 > [!CAUTION]
-> ## ⚠️ Beware of Fake FluentCleaner Websites
+> ### ⚠️ Beware of Fake FluentCleaner Websites
 >
 > **FluentCleaner has no affiliation with `fluentcleaner.org`.**
 >
@@ -8,17 +12,13 @@
 > **For your safety, only download FluentCleaner from the official releases published here on GitHub.**
 >
 > A polished website doesn't make it official, **always verify the source. 🛡️**
+
 ---
 
-# FluentCleaner
-### modern, transparent, no spyware, no scareware, no dark patterns, no upsell garbage, no fake registry magic
-
-
-<img width="1536" height="1024" alt="FluentCleaner" src="FluentCleaner/Assets/Banner.png" />
-
+![FluentCleaner](FluentCleaner/Assets/Banner.png)
 
 _i built my own take on a cleaner, inspired by the old CCleaner from back in the 2006 days, just adapted to how things should work today. modern (built with WinUI 3), minimal and focused on actually cleaning what matters (without all the usual nonsense)_
- 
+
 i built this because at some point you start noticing a pattern
 
 things that were genuinely good… slowly become worse.
@@ -44,10 +44,11 @@ here's a first preview so you can get a feel for the direction. i might end up f
 if you like it, cool. if not, also fair
 
 ## 🚀 Download Latest Stable
+
 FluentCleaner comes in two flavors. Same cleaning engine and winapp2.ini parser underneath, different UI and runtime story.
 
-|  | **FluentCleaner** (WinUI 3) | **FluentCleaner Classic** |
-|---|---|---|
+| | **FluentCleaner** (WinUI 3) | **FluentCleaner Classic** |
+| --- | --- | --- |
 | Framework | .NET 10 + Windows App SDK | .NET Framework 4.8 (WinForms) |
 | Deployment | self-contained (runtime bundled) | framework-dependent (uses the runtime already on your system) |
 | Unpacked size | ~140 MB | ~3.57 MB |
@@ -69,10 +70,11 @@ Older versions of both are available in [Releases](https://github.com/marspater/
 honestly? it depends and that's not a cop-out
 
 on a modern system with plenty of free space, you probably won't notice a dramatic speed boost.
-but Microsoft themselves say that running low on storage can slow things down and even block 
+but Microsoft themselves say that running low on storage can slow things down and even block
 Windows updates ([source](https://support.microsoft.com/en-us/windows/free-up-drive-space-in-windows-85529ccb-c365-490d-b548-831022bc9b32)) so if your drive is getting full, cleaning matters more than you'd think.
 
 beyond speed, there are solid reasons to clean regularly:
+
 - reclaim disk space that's been quietly eaten up over months
 - troubleshoot app issues caused by corrupted cache
 - shrink backup size
@@ -149,11 +151,12 @@ yes please 🙌 it's built for it. here's the whole process:
 5. open a pull request 🎉
 
 two things that trip people up:
+
 - **don't touch the XML structure** — no editing `<data>`, `<resheader>`, the version header or the `<?xml ...>` line. only the text inside `<value>` gets translated.
 - **this is only for the app UI.** the cleaning databases (winapp2.ini etc.) come from the upstream Winapp2 project and aren't translated here.
 
 save the file as UTF-8 and you're good. don't see your language yet? that just means nobody's done it — could be you 😉
- 
+
 <summary>can i use a custom winapp2 database?</summary>
 
 yes. FluentCleaner isn't locked to one source.
@@ -167,7 +170,7 @@ just drop the file somewhere on your system, then head to:
 **Settings > Database > Custom** and point it at your file. that's it.
 
 the official database from the winapp2 project lives here:
-https://github.com/MoscaDotTo/Winapp2, it's community-maintained, 
+<https://github.com/MoscaDotTo/Winapp2>, it's community-maintained,
 updated regularly, and covers thousands of apps. a solid starting point
 if you want more coverage than the default.
 
@@ -210,6 +213,7 @@ Each automatic run appends a detailed log to:
 ```
 
 The log contains:
+
 - timestamp
 - every deleted path grouped by entry
 - total cleaned size
@@ -250,11 +254,10 @@ FluentCleaner is a one-person project, not a multi-million dollar company with i
 If you want to support development financially, you can do so here:
 [PayPal](https://www.paypal.com/donate/?hosted_button_id=99X8UQJQP96WN)
 
-
 </details>
 
- ## Optimizer Myths
- 
+## Optimizer Myths
+
 <details>
 <summary>why doesn't FluentCleaner have X?</summary>
 
@@ -282,21 +285,17 @@ the premise sounds reasonable ; orphaned keys accumulate, windows slows down, cl
 - windows loads registry keys on demand. ten thousand orphaned uninstaller entries have zero measurable impact on boot time or performance. this has been benchmarked to death.
 - the risk/reward is completely inverted. a registry cleaner that removes the wrong key can break applications or in edge cases the os itself. the upside is placebo. the downside is a broken install.
 
-ccleaner has one because it's a selling point that *sounds* technical. FluentCleaner doesn't have one because shipping a feature that exists to look good rather than do good would be dishonest.
+ccleaner has one because it's a selling point that _sounds_ technical. FluentCleaner doesn't have one because shipping a feature that exists to look good rather than do good would be dishonest.
 
 if you actually need to clean up after a broken uninstaller;[autoruns](https://learn.microsoft.com/en-us/sysinternals/downloads/autoruns) or a targeted manual edit is the right tool, not a bulk cleaner.
 
 </details>
-
 
 <details>
 <summary>general philosophy</summary>
 
 FluentCleaner targets things that are unambiguously junk;cache files, temp data, leftover logs. it deliberately avoids the feature creep that turned ccleaner from a focused utility into bloatware with a vpn upsell on every launch.
 
-
-
 fewer features. honest features.
 
 </details>
-
