@@ -1,0 +1,11 @@
+{
+  "dotnet.defaultSolution": "FluentCleaner.sln",
+  "dotnet.server.suppressExtensionSwitches": true,
+  "omnisharp.autoStart": true,
+  "omnisharp.enableRoslynAnalyzers": true,
+  "omnisharp.enableImportCompletion": true,
+  "files.exclude": {
+    "**/bin": true,
+    "**/obj": true
+  }
+}
