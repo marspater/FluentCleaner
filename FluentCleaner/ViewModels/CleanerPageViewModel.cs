@@ -24,6 +24,7 @@ public partial class CleanerPageViewModel : ObservableObject
 
     // --- Observable state ---------------------------------------------------
     [ObservableProperty] public partial ObservableCollection<CleanerCategoryViewModel> Categories { get; set; } = [];    // left panel: category tree
+    public List<CleanerEntryViewModel> FlatEntries { get; private set; } = []; // cached flat list of entries for fast queries
     [ObservableProperty] public partial ObservableCollection<ScanResultLine>           ResultLines { get; set; } = [];    // right panel: per-app results after Analyze
     [ObservableProperty] public partial ObservableCollection<DetailLine>               DetailLines { get; set; } = [];    // right panel: file/registry paths when a result row is open
     [ObservableProperty] public partial ScanResultLine?                                SelectedResultLine { get; set; }   // which result row is currently open in detail view
@@ -95,7 +96,7 @@ public partial class CleanerPageViewModel : ObservableObject
     // Cleans only the entry currently shown in the detail pane.
     [RelayCommand] private async Task CleanSelected()
     {
-        var entry = Categories.SelectMany(c => c.Entries)
+        var entry = FlatEntries
                               .FirstOrDefault(e => e.Name == SelectedResultLine?.AppName);
         if (entry is not null) await CleanSingleEntryAsync(entry);
     }
@@ -444,7 +445,7 @@ public partial class CleanerPageViewModel : ObservableObject
 
     // Warnings for the main "Run Cleaner" button.
     public IReadOnlyList<string> GetWarningsForSelectedEntries() =>
-        BuildWarnings(Categories.SelectMany(c => c.Entries).Where(e => e.IsSelected));
+        BuildWarnings(FlatEntries.Where(e => e.IsSelected));
 
     // Warnings for a single entry clean action.
     public IReadOnlyList<string> GetWarningsForEntry(CleanerEntryViewModel entryVm) =>
@@ -491,6 +492,7 @@ public partial class CleanerPageViewModel : ObservableObject
     private void RebuildCategories(List<CleanerEntry> entries)
     {
         Categories.Clear();
+        FlatEntries.Clear();
 
         var groups = entries
             .Select(e => new { Entry = e, Category = CategoryResolver.TryMapLangSecRef(e) })
@@ -521,6 +523,7 @@ public partial class CleanerPageViewModel : ObservableObject
                 };
 
                 catVm.Entries.Add(entryVm);
+                FlatEntries.Add(entryVm);
             }
             Categories.Add(catVm);
         }
@@ -551,11 +554,11 @@ public partial class CleanerPageViewModel : ObservableObject
 
     // Snapshot the currently checked entries from the visible list
     private List<CleanerEntry> GetSelectedEntries() =>
-        Categories.SelectMany(c => c.Entries).Where(e => e.IsSelected).Select(e => e.Entry).ToList();
+        FlatEntries.Where(e => e.IsSelected).Select(e => e.Entry).ToList();
 
     // Tiny helper for the search status text.
     private int CountVisibleEntries() =>
-        Categories.Sum(c => c.Entries.Count);
+        FlatEntries.Count;
 
     // --- Engine (shared by all three scopes above) --------------------------
 
@@ -631,14 +634,14 @@ public partial class CleanerPageViewModel : ObservableObject
     // Keep the little size label next to a checkbox in sync with the latest scan.
     private void UpdateEntrySize(CleanerEntry entry, string sizeText)
     {
-        var vm = Categories.SelectMany(c => c.Entries).FirstOrDefault(e => e.Entry == entry);
+        var vm = FlatEntries.FirstOrDefault(e => e.Entry == entry);
         if (vm is not null) vm.SizeText = sizeText;
     }
 
     // After a full clean pass, all per-entry size badges are stale anyway.
     private void ClearAllEntrySizes()
     {
-        foreach (var entry in Categories.SelectMany(c => c.Entries))
+        foreach (var entry in FlatEntries)
             entry.SizeText = "";
     }
 
@@ -675,7 +678,7 @@ public partial class CleanerPageViewModel : ObservableObject
     private void SetAllSelected(bool value)
     {
         _suppressSave = true;
-        foreach (var entry in Categories.SelectMany(c => c.Entries))
+        foreach (var entry in FlatEntries)
             entry.IsSelected = value;
         _suppressSave = false;
         SaveSelection();
@@ -686,7 +689,7 @@ public partial class CleanerPageViewModel : ObservableObject
     private void SetAllDefaults()
     {
         _suppressSave = true;
-        foreach (var entry in Categories.SelectMany(c => c.Entries))
+        foreach (var entry in FlatEntries)
             entry.IsSelected = entry.Entry.Default;
         _suppressSave = false;
         SaveSelection();

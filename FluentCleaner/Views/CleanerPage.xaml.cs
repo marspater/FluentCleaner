@@ -212,7 +212,7 @@ public sealed partial class CleanerPage : Page, ISearchablePage, IPageActions
 
     private async Task<bool> CheckRunningBrowsersAsync(IEnumerable<CleanerEntryViewModel>? selectedEntries = null)
     {
-        var selectedCodes = (selectedEntries ?? ViewModel.Categories.SelectMany(c => c.Entries).Where(e => e.IsSelected))
+        var selectedCodes = (selectedEntries ?? ViewModel.FlatEntries.Where(e => e.IsSelected))
             .Select(e => e.Entry.LangSecRef ?? -1)
             .ToHashSet();
 

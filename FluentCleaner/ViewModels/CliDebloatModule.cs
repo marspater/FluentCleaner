@@ -19,7 +19,7 @@ public class CliDebloatModule
     // Pre-load Winappx.ini so autocomplete works before the first appx command
     public async Task InitAsync()
     {
-        if (AppSettings.Instance.EnableWinappx && File.Exists(WinappxPath))
+        if (AppSettings.Instance.EnableWinappx && await Task.Run(() => File.Exists(WinappxPath)))
             _entries = await AppxService.ParseDatabaseAsync(WinappxPath);
     }
 
@@ -173,7 +173,7 @@ public class CliDebloatModule
             return [];
         }
         if (_entries is not null) return _entries;
-        if (!File.Exists(WinappxPath))
+        if (!await Task.Run(() => File.Exists(WinappxPath)))
         {
             output.Add(ResourceService.Get("CLI_AppxNotFound"));
             return [];

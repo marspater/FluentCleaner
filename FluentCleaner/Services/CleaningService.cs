@@ -1,6 +1,7 @@
 using FluentCleaner.Models;
 using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
+using System.Diagnostics;
 using System.IO.Enumeration;
 using System.Runtime.InteropServices;
 
@@ -55,13 +56,13 @@ public class CleaningService
                 }
             }
             catch (OperationCanceledException) { throw; }  //cancel must reach the caller, not get swallowed
-            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Error analyzing file key {fileKey.Path}: {ex.Message}"); }
+            catch (Exception ex) { Debug.WriteLine($"[CleaningService.Analyze] Error processing file key {fileKey.Path}: {ex.Message}"); }
         }
 
         foreach (var regKey in entry.RegKeys)
         {
             try { result.RegistryToDelete.AddRange(FindRegistryItems(regKey)); }
-            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Error analyzing registry key {regKey.KeyPath}: {ex.Message}"); }
+            catch (Exception ex) { Debug.WriteLine($"[CleaningService.Analyze] Error processing registry key {regKey.KeyPath}: {ex.Message}"); }
         }
 
         return result;
@@ -98,7 +99,7 @@ public class CleaningService
         {
             IEnumerable<string> files;
             try { files = Directory.EnumerateFiles(root, p); }
-            catch { files = []; }
+            catch (Exception ex) { Debug.WriteLine($"[CleaningService.EnumerateFilesSafe] Error enumerating files in {root} with pattern {p}: {ex.Message}"); files = []; }
             foreach (var f in files)
                 if (seen.Add(f))   //skip if another pattern already matched this file
                     yield return f;
@@ -113,7 +114,7 @@ public class CleaningService
         try
         { dirs = Directory.EnumerateDirectories(root)
                               .Where(d => (File.GetAttributes(d) & FileAttributes.ReparsePoint) == 0); }
-        catch { yield break; }
+        catch (Exception ex) { Debug.WriteLine($"[CleaningService.EnumerateFilesSafe] Error enumerating directories in {root}: {ex.Message}"); yield break; }
 
         foreach (var sub in dirs)
         {
@@ -168,7 +169,7 @@ public class CleaningService
                 bytes += size;
                 progress?.Report(ResourceService.Fmt("Prog_Deleted", file));
             }
-            catch { } //in use or already gone; skip silently
+            catch (Exception ex) { Debug.WriteLine($"[CleaningService.Clean] Failed to delete file {file}: {ex.Message}"); } //in use or already gone; skip silently
         }
 
         foreach (var regItem in result.RegistryToDelete)
@@ -179,7 +180,7 @@ public class CleaningService
                 count++;
                 progress?.Report(ResourceService.Fmt("Prog_Registry", regItem));
             }
-            catch { }
+            catch (Exception ex) { Debug.WriteLine($"[CleaningService.Clean] Failed to delete registry item {regItem.KeyPath}: {ex.Message}"); }
         }
 
         // REMOVESELF: prune directories that are now empty
@@ -231,7 +232,7 @@ public class CleaningService
             if (Directory.GetFileSystemEntries(path).Length == 0)
                 Directory.Delete(path);
         }
-        catch { }
+        catch (Exception ex) { Debug.WriteLine($"[CleaningService.TryPruneEmptyDirs] Failed to prune empty directories in {path}: {ex.Message}"); }
     }
 
     // --- Helpers --------------------------------------------------
@@ -279,7 +280,7 @@ public class CleaningService
         if (handle.IsInvalid) return -1;   // locked; skip!
 
         try { return new FileInfo(path).Length; }
-        catch { return -1; }
+        catch (Exception ex) { Debug.WriteLine($"[CleaningService.TryGetDeletableSize] Failed to get length of {path}: {ex.Message}"); return -1; }
     }
 
     // True if any rule matches;short-circuits on the first hit
