@@ -476,7 +476,10 @@ public sealed partial class ToolsPage : Page, ISearchablePage
                     description = line.TrimStart('#').Trim();
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to read metadata from script '{scriptPath}': {ex.Message}");
+        }
 
         return new ScriptMeta
         {

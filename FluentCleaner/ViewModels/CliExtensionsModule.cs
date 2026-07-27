@@ -116,7 +116,10 @@ public class CliExtensionsModule
                                      .Where(x => x.Length > 0)
                                      .ToList();
         }
-        catch { }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to read script options from '{scriptPath}': {ex.Message}");
+        }
         return [];
     }
 }
