@@ -265,11 +265,11 @@ public sealed partial class ToolsPage : Page, ISearchablePage
                 if (!string.IsNullOrEmpty(t)) inputArg = t;
             }
 
-            var extra = new StringBuilder();
-            if (!string.IsNullOrWhiteSpace(optionArg)) extra.Append(' ').Append(QuoteForPs(optionArg));
-            if (!string.IsNullOrWhiteSpace(inputArg)) extra.Append(' ').Append(QuoteForPs(inputArg));
+            var extraArgs = new List<string>();
+            if (!string.IsNullOrWhiteSpace(optionArg)) extraArgs.Add(optionArg);
+            if (!string.IsNullOrWhiteSpace(inputArg)) extraArgs.Add(inputArg);
 
-            await RunScriptAsync(_selectedTool.ScriptPath, extra.ToString(), useConsole, AppendLog);
+            await RunScriptAsync(_selectedTool.ScriptPath, extraArgs, useConsole, AppendLog);
 
             lblStatus.Text = useConsole ? "Opened in console." : "Done.";
         }
@@ -365,7 +365,7 @@ public sealed partial class ToolsPage : Page, ISearchablePage
 
         txtLog.Text = "";
         AppendLog($"── {_selectedTool.Title} — Help ──");
-        await RunScriptAsync(_selectedTool.ScriptPath, " " + QuoteForPs(helpOpt), false, AppendLog);
+        await RunScriptAsync(_selectedTool.ScriptPath, new[] { helpOpt }, false, AppendLog);
     }
 
     private void btnClearLog_Click(object sender, RoutedEventArgs e) =>
@@ -392,26 +392,40 @@ public sealed partial class ToolsPage : Page, ISearchablePage
 
     // onOutput is called live for every stdout/stderr line.
     // Pass AppendLog to stream output into the log panel.
-    private static Task RunScriptAsync(string scriptPath, string extraArgs, bool useConsole,
+    private static Task RunScriptAsync(string scriptPath, IEnumerable<string> extraArgs, bool useConsole,
                                        Action<string>? onOutput = null) =>
         Task.Run(() =>
         {
-            var args = $"-NoProfile -ExecutionPolicy Bypass -File \"{scriptPath}\"{extraArgs}";
+            var psi = new ProcessStartInfo("powershell.exe");
+            if (useConsole)
+            {
+                psi.ArgumentList.Add("-NoExit");
+                psi.UseShellExecute = true;
+            }
+            else
+            {
+                psi.RedirectStandardOutput = true;
+                psi.RedirectStandardError = true;
+                psi.UseShellExecute = false;
+                psi.CreateNoWindow = true;
+            }
+
+            psi.ArgumentList.Add("-NoProfile");
+            psi.ArgumentList.Add("-ExecutionPolicy");
+            psi.ArgumentList.Add("Bypass");
+            psi.ArgumentList.Add("-File");
+            psi.ArgumentList.Add(scriptPath);
+
+            foreach (var arg in extraArgs)
+            {
+                psi.ArgumentList.Add(arg);
+            }
 
             if (useConsole)
             {
-                Process.Start(new ProcessStartInfo("powershell.exe", "-NoExit " + args)
-                { UseShellExecute = true });
+                Process.Start(psi);
                 return;
             }
-
-            var psi = new ProcessStartInfo("powershell.exe", args)
-            {
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
 
             using var p = new Process { StartInfo = psi };
             p.OutputDataReceived += (_, ev) => { if (!string.IsNullOrEmpty(ev.Data)) onOutput?.Invoke(ev.Data); };
@@ -421,12 +435,6 @@ public sealed partial class ToolsPage : Page, ISearchablePage
             p.BeginErrorReadLine();
             p.WaitForExit();
         });
-
-    private static string QuoteForPs(string? value)
-    {
-        if (value is null) return "\"\"";
-        return "\"" + value.Replace("\"", "\\\"") + "\"";
-    }
 
     // ---------------- Metadata parsing ----------------
 
