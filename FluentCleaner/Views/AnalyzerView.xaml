@@ -1,0 +1,182 @@
+<Page
+    x:Class="FluentCleaner.Views.AnalyzerView"
+    NavigationCacheMode="Required"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:FluentCleaner.ViewModels"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Progress ring/bar for scans -->
+        <ProgressBar Grid.Row="0"
+                     VerticalAlignment="Top"
+                     IsIndeterminate="True"
+                     Visibility="{x:Bind ViewModel.IsBusy, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}" />
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="32,26,32,32" Spacing="22" HorizontalAlignment="Stretch">
+                
+                <TextBlock Text="Disk Space Analyzer" Style="{StaticResource TitleTextBlockStyle}" />
+
+                <!-- Scan options and folder picker -->
+                <StackPanel Spacing="10">
+                    <TextBlock Text="Target Location" FontSize="13" FontWeight="SemiBold" />
+                    
+                    <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1" CornerRadius="8" Padding="18,14">
+                        <StackPanel Spacing="14">
+                            <!-- Target selector -->
+                            <Grid ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" /> <!-- Quick Drive Pick -->
+                                    <ColumnDefinition Width="*" />    <!-- Path Textbox -->
+                                    <ColumnDefinition Width="Auto" /> <!-- Browse Button -->
+                                    <ColumnDefinition Width="Auto" /> <!-- Scan Actions -->
+                                </Grid.ColumnDefinitions>
+
+                                <ComboBox Grid.Column="0"
+                                          ItemsSource="{x:Bind ViewModel.LocalDrives}"
+                                          SelectedItem="{x:Bind ViewModel.RootPath, Mode=TwoWay}"
+                                          IsEnabled="{x:Bind ViewModel.IsNotBusy, Mode=OneWay}"
+                                          PlaceholderText="Drives"
+                                          MinWidth="100" />
+                                
+                                <TextBox Grid.Column="1"
+                                         PlaceholderText="Path to analyze (e.g. C:\Users or select drive)"
+                                         Text="{x:Bind ViewModel.RootPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         IsEnabled="{x:Bind ViewModel.IsNotBusy, Mode=OneWay}"
+                                         FontSize="12" />
+                                         
+                                <Button Grid.Column="2" Content="Browse…"
+                                        Click="BrowseButton_Click"
+                                        IsEnabled="{x:Bind ViewModel.IsNotBusy, Mode=OneWay}" />
+
+                                <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8">
+                                    <Button Content="Scan"
+                                            Style="{StaticResource AccentButtonStyle}"
+                                            Command="{x:Bind ViewModel.ScanCommand}"
+                                            MinWidth="90" />
+                                    <Button Content="Cancel"
+                                            Command="{x:Bind ViewModel.CancelCommand}"
+                                            Visibility="{x:Bind ViewModel.IsBusy, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
+                                            MinWidth="90" />
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- Drive Capacity Info & Baseline Toggle -->
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                
+                                <TextBlock Grid.Column="0"
+                                           Text="{x:Bind ViewModel.DriveInfoText, Mode=OneWay}"
+                                           FontSize="12"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           VerticalAlignment="Center" />
+                                
+                                <ToggleSwitch Grid.Column="1"
+                                              Header="Use scanned folder size as baseline"
+                                              IsOn="{x:Bind ViewModel.UseScannedRootPercentage, Mode=TwoWay}"
+                                              OnContent="" OffContent=""
+                                              FontSize="12"
+                                              MinWidth="0"
+                                              VerticalAlignment="Center" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- Results list card -->
+                <StackPanel Spacing="10" Visibility="{x:Bind ViewModel.HasResults, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                    <TextBlock Text="Storage Distribution" FontSize="13" FontWeight="SemiBold" />
+
+                    <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1" CornerRadius="8">
+                        <ListView ItemsSource="{x:Bind ViewModel.Items, Mode=OneWay}"
+                                  SelectionMode="None"
+                                  Padding="0,4">
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem">
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                    <Setter Property="Padding" Value="0" />
+                                    <Setter Property="MinHeight" Value="0" />
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                            <ListView.ItemTemplate>
+                                <DataTemplate x:DataType="vm:AnalyzerItemViewModel">
+                                    <Grid Padding="18,12"
+                                          BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
+                                          BorderThickness="0,0,0,1"
+                                          ToolTipService.ToolTip="{x:Bind FullPath}">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" /> <!-- Icon -->
+                                            <ColumnDefinition Width="*" />    <!-- Name & Path -->
+                                            <ColumnDefinition Width="Auto" /> <!-- Size & Pct -->
+                                        </Grid.ColumnDefinitions>
+                                        
+                                        <!-- Icon -->
+                                        <FontIcon Grid.Row="0" Grid.Column="0"
+                                                  Glyph="{x:Bind IconGlyph}"
+                                                  FontSize="15"
+                                                  Margin="0,0,12,0"
+                                                  Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                  VerticalAlignment="Center" />
+                                                  
+                                        <!-- Name & Path -->
+                                        <StackPanel Grid.Row="0" Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Text="{x:Bind Name}" FontWeight="SemiBold" FontSize="12.5" />
+                                            <TextBlock Text="{x:Bind FullPath}" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" />
+                                        </StackPanel>
+
+                                        <!-- Size Label -->
+                                        <TextBlock Grid.Row="0" Grid.Column="2"
+                                                   Text="{x:Bind SizeAndPercentageText, Mode=OneWay}"
+                                                   FontSize="12"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                   VerticalAlignment="Center"
+                                                   HorizontalAlignment="Right" />
+                                                   
+                                        <!-- Sleek Density Progress Bar -->
+                                        <ProgressBar Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
+                                                     Value="{x:Bind PercentageValue, Mode=OneWay}"
+                                                     Maximum="100"
+                                                     Height="4"
+                                                     Margin="0,8,0,0"
+                                                     HorizontalAlignment="Stretch" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+                    </Border>
+                </StackPanel>
+
+                <!-- Status Card -->
+                <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1" CornerRadius="8" Padding="18,14">
+                    <TextBlock Text="{x:Bind ViewModel.StatusText, Mode=OneWay}"
+                               FontSize="12"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextWrapping="WrapWholeWords" />
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>
