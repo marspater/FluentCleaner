@@ -7,6 +7,9 @@
   "omnisharp.enableRoslynAnalyzers": true,
   "omnisharp.enableImportCompletion": true,
   "dotnet.preferAnalysisInBackground": true,
+  "files.associations": {
+    "*.sln": "visual-studio-solution"
+  },
   "files.exclude": {
     "**/bin": true,
     "**/obj": true,
