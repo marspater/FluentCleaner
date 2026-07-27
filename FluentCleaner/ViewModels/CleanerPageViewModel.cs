@@ -292,7 +292,7 @@ public partial class CleanerPageViewModel : ObservableObject
                 using var process = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
                 {
                     FileName    = "cmd.exe",
-                    Arguments   = $"/c {line}",
+                    ArgumentList = { "/c", line },
                     UseShellExecute = false,
                     CreateNoWindow = true
                 });
