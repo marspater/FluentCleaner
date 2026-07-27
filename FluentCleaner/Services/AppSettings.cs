@@ -119,7 +119,10 @@ public class AppSettings
             Directory.CreateDirectory(Path.GetDirectoryName(SettingsFile)!);
             File.WriteAllText(SettingsFile, JsonSerializer.Serialize(this, JsonOptions));
         }
-        catch { }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[AppSettings] Failed to save settings: {ex}");
+        }
     }
 
     private static AppSettings Load()
@@ -131,7 +134,11 @@ public class AppSettings
             s.CustomWinapp2Path = NormalizePath(s.CustomWinapp2Path);
             return s;
         }
-        catch { return new(); }  // corrupted file;just start fresh
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[AppSettings] Failed to load settings: {ex}");
+            return new();
+        }  // corrupted file;just start fresh
     }
 
     // Export current settings to a file (for backup or sharing)
