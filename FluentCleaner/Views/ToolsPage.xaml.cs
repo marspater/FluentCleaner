@@ -15,10 +15,10 @@ public enum ToolsCategory
 
 public class ToolsDefinition
 {
-    public string Title { get; set; }
-    public string Icon { get; set; }
-    public string ScriptPath { get; set; }
-    public ScriptMeta Meta { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string Icon { get; set; } = string.Empty;
+    public string ScriptPath { get; set; } = string.Empty;
+    public ScriptMeta Meta { get; set; } = new ScriptMeta();
 
     public string Description => Meta?.Description ?? string.Empty;
     public ToolsCategory Category => Meta?.Category ?? ToolsCategory.All;
@@ -32,10 +32,10 @@ public class ToolsDefinition
 
     public ToolsDefinition(string title, string icon, string scriptPath, ScriptMeta meta)
     {
-        Title = title;
-        Icon = icon;
-        ScriptPath = scriptPath;
-        Meta = meta;
+        Title = title ?? string.Empty;
+        Icon = icon ?? string.Empty;
+        ScriptPath = scriptPath ?? string.Empty;
+        Meta = meta ?? new ScriptMeta();
     }
     public ToolsDefinition()
     {
@@ -47,7 +47,20 @@ public class ToolsDefinition
 }
 
 
-public record ScriptMeta { public string Description { get; init; } = ""; public List<string> Options { get; init; } = new(); public ToolsCategory Category { get; init; } = ToolsCategory.All; public bool UseConsole { get; init; } = false; public bool UseLog { get; init; } = false; public bool SupportsInput { get; init; } = false; public string InputPlaceholder { get; init; } = ""; public string PoweredByText { get; init; } = ""; public string PoweredByUrl { get; init; } = ""; }
+public record ScriptMeta
+{
+    public string Description { get; init; } = "";
+    public List<string> Options { get; init; } = new();
+    public ToolsCategory Category { get; init; } = ToolsCategory.All;
+    public bool UseConsole { get; init; } = false;
+    public bool UseLog { get; init; } = false;
+    public bool SupportsInput { get; init; } = false;
+    public string InputPlaceholder { get; init; } = "";
+    public string PoweredByText { get; init; } = "";
+    public string PoweredByUrl { get; init; } = "";
+
+    public ScriptMeta() {}
+}
 
 
 public sealed partial class ToolsPage : Page, ISearchablePage
