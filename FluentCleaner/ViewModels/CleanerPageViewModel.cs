@@ -289,10 +289,13 @@ public partial class CleanerPageViewModel : ObservableObject
         {
             try
             {
+                ParseCommand(line, out string fileName, out string args);
+                if (string.IsNullOrEmpty(fileName)) continue;
+
                 using var process = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
                 {
-                    FileName    = "cmd.exe",
-                    Arguments   = $"/c {line}",
+                    FileName    = fileName,
+                    Arguments   = args,
                     UseShellExecute = false,
                     CreateNoWindow = true
                 });
@@ -301,6 +304,40 @@ public partial class CleanerPageViewModel : ObservableObject
                     await process.WaitForExitAsync();
             }
             catch { /* broken command never crashes the app */ }
+        }
+    }
+
+    private static void ParseCommand(string commandLine, out string fileName, out string arguments)
+    {
+        commandLine = commandLine.Trim();
+        if (string.IsNullOrEmpty(commandLine))
+        {
+            fileName = "";
+            arguments = "";
+            return;
+        }
+
+        if (commandLine[0] == '"')
+        {
+            int endIndex = commandLine.IndexOf('"', 1);
+            if (endIndex != -1)
+            {
+                fileName = commandLine.Substring(1, endIndex - 1);
+                arguments = commandLine.Substring(endIndex + 1).Trim();
+                return;
+            }
+        }
+
+        int spaceIndex = commandLine.IndexOf(' ');
+        if (spaceIndex != -1)
+        {
+            fileName = commandLine.Substring(0, spaceIndex);
+            arguments = commandLine.Substring(spaceIndex + 1).Trim();
+        }
+        else
+        {
+            fileName = commandLine;
+            arguments = "";
         }
     }
 
