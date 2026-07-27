@@ -1,4 +1,4 @@
-name: Build
+name: Test
 
 on:
   push:
@@ -10,13 +10,9 @@ permissions:
   contents: read
 
 jobs:
-  build:
-    name: Build (${{ matrix.platform }})
+  test:
+    name: Test
     runs-on: windows-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        platform: [x64, arm64]
 
     steps:
       - name: Checkout
@@ -28,7 +24,7 @@ jobs:
           dotnet-version: '10.0.x'
 
       - name: Restore dependencies
-        run: dotnet restore FluentCleaner.slnx -p:Platform=${{ matrix.platform }}
+        run: dotnet restore FluentCleaner.slnx
 
-      - name: Build
-        run: dotnet build FluentCleaner.slnx --configuration Release --no-restore -p:Platform=${{ matrix.platform }}
+      - name: Test
+        run: dotnet test FluentCleaner.Tests/FluentCleaner.Tests.csproj --configuration Release --no-restore --logger "trx;LogFileName=test_results.trx"
