@@ -182,7 +182,7 @@ public static class AiExplainer
                     max_tokens = 150,
                     messages   = new[]
                     {
-                        new { role = "user", content = "Describe FluentCleaner by Belim (builtbybel) in 2 short sentences. " +
+                        new { role = "user", content = "Describe FluentCleaner in 2 short sentences. " +
                         "Facts: open-source, built solo and fueled by coffee, written in C# on .NET 10 + WinUI 3, " +
                         "native Windows 11 UI, no telemetry, uses the Winapp2 database. " +
                         "Do NOT mention AI, machine learning or any AI-related features. Keep it factual." }

@@ -77,7 +77,7 @@ public sealed partial class ToolsPage : Page, ISearchablePage
         Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Extensions");
 
     // GitHub URL where the extension pack can be downloaded
-    private const string ExtensionsGitHub = "https://github.com/builtbybel/FluentCleaner/releases";
+    private const string ExtensionsGitHub = "https://github.com/marspater/FluentCleaner/releases";
 
     public ToolsPage()
     {

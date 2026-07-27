@@ -114,14 +114,9 @@ public sealed partial class SettingsPage : Page, IPageActions
         }
     }
 
-    private void DonationBanner_Dismiss(object sender, RoutedEventArgs e) =>
-        DonationBanner.IsOpen = false;
-
     private async void Link_GitHub(object sender, RoutedEventArgs e)   => await AppLinks.OpenAsync(AppLinks.GitHub);
     private async void Link_Issues(object sender, RoutedEventArgs e)   => await AppLinks.OpenAsync(AppLinks.Issues);
     private async void Link_Releases(object sender, RoutedEventArgs e) => await AppLinks.OpenAsync(AppLinks.Releases);
-    private async void Link_Donate(object sender, RoutedEventArgs e)   => await AppLinks.OpenAsync(AppLinks.Donate);
-    private async void Link_KoFi(object sender, RoutedEventArgs e)     => await AppLinks.OpenAsync(AppLinks.KoFi);
     private async void Link_Faq(object sender, RoutedEventArgs e)        => await AppLinks.OpenAsync(AppLinks.Faq);
     private async void Link_IconCredit(object sender, RoutedEventArgs e) => await AppLinks.OpenAsync(AppLinks.IconCredit);
 

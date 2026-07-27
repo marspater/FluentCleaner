@@ -111,28 +111,5 @@
 
             <Frame x:Name="NavFrame" />
         </NavigationView>
-        <!-- donation prompt; anchored to the [...] button -->
-        <TeachingTip x:Name="DonationTip"
-                     x:Uid="DonationBanner"
-                     Target="{x:Bind BtnPageActions}"
-                     PreferredPlacement="BottomLeft"
-                     IsLightDismissEnabled="False">
-            <TeachingTip.Content>
-                <StackPanel Spacing="6" Margin="0,4,0,0">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <Button x:Uid="BtnDonatePayPal" Click="DonationTip_PayPal"
-                                Style="{StaticResource AccentButtonStyle}" />
-                        <Button x:Uid="BtnDonateKoFi" Click="DonationTip_KoFi" />
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Spacing="12">
-                        <HyperlinkButton x:Uid="BtnDonateGitHub" Click="DonationTip_Star"
-                                         Padding="0" FontSize="12" />
-                        <HyperlinkButton x:Uid="BtnDonateLater" Click="DonationTip_Dismiss"
-                                         Padding="0" FontSize="12"
-                                         Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                    </StackPanel>
-                </StackPanel>
-            </TeachingTip.Content>
-        </TeachingTip>
     </Grid>
 </Window>

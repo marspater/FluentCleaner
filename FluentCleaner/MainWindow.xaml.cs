@@ -21,10 +21,6 @@ public sealed partial class MainWindow : Window
         SyncSearchState();                           //enable/disable search for initial page
         SizeChanged += MainWindow_SizeChanged;       //watch for window resize; compact search
         UpdateTitleSearch(AppWindow.Size.Width);     //apply correct search mode on first load
-
-        // show donation tip once; never again after the user dismisses it
-        if (!AppSettings.Instance.DonationDismissed)
-            DonationTip.IsOpen = true;
     }
 
     // --- TitleBar pane toggle -------------------------------------------------
@@ -115,31 +111,5 @@ public sealed partial class MainWindow : Window
             TitleSearchBox.Width = width < 700 ? 220 : 280;
     }
 
-    // --- Donation tip --------------------------------------------------------
 
-    private async void DonationTip_PayPal(object sender, RoutedEventArgs e)
-    {
-        DonationTip.IsOpen = false;
-        await AppLinks.OpenAsync(AppLinks.Donate);
-    }
-
-    private async void DonationTip_KoFi(object sender, RoutedEventArgs e)
-    {
-        DonationTip.IsOpen = false;
-        await AppLinks.OpenAsync(AppLinks.KoFi);
-    }
-
-    private async void DonationTip_Star(object sender, RoutedEventArgs e)
-    {
-        DonationTip.IsOpen = false;
-        await AppLinks.OpenAsync(AppLinks.GitHub);
-    }
-
-    // explicit opt-out; X just closes for this session, tip comes back next launch
-    private void DonationTip_Dismiss(object sender, RoutedEventArgs e)
-    {
-        DonationTip.IsOpen = false;
-        AppSettings.Instance.DonationDismissed = true;
-        AppSettings.Instance.Save();
-    }
 }

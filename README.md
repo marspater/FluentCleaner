@@ -54,24 +54,12 @@ FluentCleaner comes in two flavors. Same cleaning engine and winapp2.ini parser 
 | Files | 243 | 20 |
 | Platform | x64 / ARM64, Windows 10 build 17763+ | practically any Windows |
 | Shared engine | `FluentCleaner.Core` (netstandard2.0) — scan/clean logic, Winapp2.ini parser | same |
-| Requirements | Windows 10 2004 (Build 19041) or later + [Windows App SDK 2.0.1 runtime](https://aka.ms/windowsappsdk/2.0/2.0.1/windowsappruntimeinstall-x64.exe) (installed once, separately) | none — uses whatever .NET Framework is already on your system |
-| Download | [⬇ Latest](https://github.com/builtbybel/FluentCleaner/releases/latest/download/FluentCleaner-win-x64.zip) | [⬇ Latest](https://github.com/builtbybel/FluentCleaner/releases/latest/download/FluentCleaner-Classic-net48.zip) · [more info](https://github.com/builtbybel/FluentCleaner/releases/tag/classic-1.0.0) |
+| Requirements | Windows 10 2004 (Build 19041) or later + [Windows App SDK 2.3.1 runtime](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/downloads) | none — uses whatever .NET Framework is already on your system |
+| Download | [⬇ Latest](https://github.com/marspater/FluentCleaner/releases/latest/download/FluentCleaner-win-x64.zip) | [⬇ Latest](https://github.com/marspater/FluentCleaner/releases/latest/download/FluentCleaner-Classic-net48.zip) · [more info](https://github.com/marspater/FluentCleaner/releases/tag/classic-1.0.0) |
 
 **Not sure which one to grab?** If you want the modern look and don't mind installing the Windows App SDK once, go with the main version. If you want something tiny, portable, and framework-dependent (or you're on an older/locked-down machine), grab Classic.
 
-Older versions of both are available in [Releases](https://github.com/builtbybel/FluentCleaner/releases).
-
-> 💬 **Classic or Modern?** [Vote here](https://github.com/builtbybel/FluentCleaner/discussions/100) — curious which one people actually end up using day to day.
-
-## ❤️ Support
-
-no company behind this, no investors, no marketing department. just one person building a tool because the alternative got worse every year. every bit of support helps keep it going
-
-| PayPal | Ko-fi |
-|---|---|
-| [Donate via PayPal](https://www.paypal.com/donate/?hosted_button_id=99X8UQJQP96WN) | [Support on Ko-fi](https://ko-fi.com/builtbybel) |
-
-small start, same as CCleaner once was
+Older versions of both are available in [Releases](https://github.com/marspater/FluentCleaner/releases).
 
 ## FAQ
 
