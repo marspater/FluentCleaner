@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
+    <PackageReference Include="xunit" Version="2.7.0" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.7">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="coverlet.collector" Version="6.0.2">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="Moq" Version="4.20.72" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\FluentCleaner\Services\CleaningService.cs" />
+    <Compile Include="..\FluentCleaner\Services\PathExpander.cs" />
+    <Compile Include="..\FluentCleaner\Services\AppSettings.cs" />
+    <Compile Include="..\FluentCleaner\Services\FileSystem.cs" />
+    <Compile Include="..\FluentCleaner\Services\DefaultFileSystemProvider.cs" />
+    <Compile Include="..\FluentCleaner\Services\IFileSystemProvider.cs" />
+    <Compile Include="..\FluentCleaner\Models\CleanerEntry.cs" />
+    <Compile Include="..\FluentCleaner\Models\ScanResult.cs" />
+    <Compile Include="..\FluentCleaner\Models\FileKeyEntry.cs" />
+    <Compile Include="..\FluentCleaner\Models\RegKeyEntry.cs" />
+    <Compile Include="..\FluentCleaner\Models\ExcludeKeyEntry.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Microsoft.Win32.Registry">
+      <HintPath>/usr/lib/dotnet/shared/Microsoft.NETCore.App/10.0.103/Microsoft.Win32.Registry.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+</Project>

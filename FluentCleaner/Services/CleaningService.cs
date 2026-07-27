@@ -3,6 +3,12 @@ using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
 using System.IO.Enumeration;
 using System.Runtime.InteropServices;
+using System.IO;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace FluentCleaner.Services;
 
@@ -12,7 +18,13 @@ namespace FluentCleaner.Services;
    Clean   ; takes the completed ScanResult and does the actual deleting. */
 public class CleaningService
 {
+    private readonly IFileSystemProvider _fsProvider;
     private readonly PathExpander _expander = new();
+
+    public CleaningService(IFileSystemProvider? fsProvider = null)
+    {
+        _fsProvider = fsProvider ?? FileSystem.Provider;
+    }
 
     // --- Public api --------------------------------------------------
     public Task<ScanResult> AnalyzeAsync(CleanerEntry entry, IProgress<string>? progress = null, CancellationToken token = default)
@@ -26,7 +38,7 @@ public class CleaningService
     /* Read-only phase. Walks FileKeys and RegKeys, builds the deletion list, touches nothing.
        Locked files get skipped here too;they'd fail at delete time anyway and would just
        inflate the reported size for no reason. */
-    private ScanResult Analyze(CleanerEntry entry, IProgress<string>? progress, CancellationToken token = default)
+    public ScanResult Analyze(CleanerEntry entry, IProgress<string>? progress = null, CancellationToken token = default)
     {
         var result   = new ScanResult { Entry = entry };
         var excluded = BuildExclusions(entry);
@@ -47,7 +59,7 @@ public class CleaningService
                     if (result.FilesToDelete.Contains(file)) continue;
 
                     // Skip files that are truly inaccessible (hard lock / no permissions).
-                    var size = TryGetDeletableSize(file);
+                    var size = _fsProvider.TryGetDeletableSize(file);
                     if (size < 0) continue;
 
                     result.FilesToDelete.Add(file);
@@ -78,7 +90,7 @@ public class CleaningService
 
         foreach (var dir in _expander.ResolvePaths(fileKey.Path))
         {
-            if (!Directory.Exists(dir)) continue;
+            if (!_fsProvider.DirectoryExists(dir)) continue;
             progress?.Report(dir);
 
             foreach (var f in EnumerateFilesSafe(dir, patterns, recurse, progress, token))
@@ -91,13 +103,13 @@ public class CleaningService
        8.3 short-name aliases,we don't). HashSet drops files that match more than one pattern.
        Reparse points skipped;Windows ships with fun traps like
      C:\Users\All Users >> C:\ProgramData >> All Users >>....forever */
-    private static IEnumerable<string> EnumerateFilesSafe(string root, string[] patterns, bool recurse, IProgress<string>? progress = null, CancellationToken token = default)
+    private IEnumerable<string> EnumerateFilesSafe(string root, string[] patterns, bool recurse, IProgress<string>? progress = null, CancellationToken token = default)
     {
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var p in patterns)
         {
             IEnumerable<string> files;
-            try { files = Directory.EnumerateFiles(root, p); }
+            try { files = _fsProvider.EnumerateFiles(root, p); }
             catch { files = []; }
             foreach (var f in files)
                 if (seen.Add(f))   //skip if another pattern already matched this file
@@ -111,8 +123,8 @@ public class CleaningService
         //C:\Users\All Users >> C:\ProgramData >>> All Users >>...forever ;)
         //Real content is always reachable via the canonical path;no need to follow aliases
         try
-        { dirs = Directory.EnumerateDirectories(root)
-                              .Where(d => (File.GetAttributes(d) & FileAttributes.ReparsePoint) == 0); }
+        { dirs = _fsProvider.EnumerateDirectories(root)
+                              .Where(d => (_fsProvider.GetAttributes(d) & FileAttributes.ReparsePoint) == 0); }
         catch { yield break; }
 
         foreach (var sub in dirs)
@@ -152,7 +164,7 @@ public class CleaningService
     /* Deletes everything the Analyze phase queued up.
        Files that are in use or already gone get skipped silently;no point in spamming errors. 
      Also returns the count of successfully deleted items and the total bytes freed.*/
-    private (int count, long bytes) Clean(ScanResult result, IProgress<string>? progress, CancellationToken token = default)
+    public (int count, long bytes) Clean(ScanResult result, IProgress<string>? progress = null, CancellationToken token = default)
     {
         int  count = 0;
         long bytes = 0;
@@ -162,8 +174,8 @@ public class CleaningService
             token.ThrowIfCancellationRequested(); //stop between files so we never delete half an entry
             try
             {
-                var size = new FileInfo(file).Length;
-                File.Delete(file);
+                var size = _fsProvider.GetFileLength(file);
+                _fsProvider.DeleteFile(file);
                 count++;
                 bytes += size;
                 progress?.Report(ResourceService.Fmt("Prog_Deleted", file));
@@ -215,21 +227,21 @@ public class CleaningService
     /* Cleans up empty folders left behind by a REMOVESELF clean.
        Order matters: deepest first, so parent directories become empty before we try to delete them.
        The root folder itself is deleted last if it ends up empty too. */
-    private static void TryPruneEmptyDirs(string path)
+    private void TryPruneEmptyDirs(string path)
     {
-        if (!Directory.Exists(path)) return;
+        if (!_fsProvider.DirectoryExists(path)) return;
         try
         {
-            foreach (var sub in Directory.GetDirectories(path, "*", SearchOption.AllDirectories)
+            foreach (var sub in _fsProvider.GetDirectories(path, "*", SearchOption.AllDirectories)
                                          .OrderByDescending(d => d.Length))
             {
-                if (Directory.GetFileSystemEntries(sub).Length == 0)
-                    Directory.Delete(sub);
+                if (_fsProvider.GetFileSystemEntries(sub).Length == 0)
+                    _fsProvider.DeleteDirectory(sub);
             }
 
             //Delete the root folder itself if it's now empty
-            if (Directory.GetFileSystemEntries(path).Length == 0)
-                Directory.Delete(path);
+            if (_fsProvider.GetFileSystemEntries(path).Length == 0)
+                _fsProvider.DeleteDirectory(path);
         }
         catch { }
     }
@@ -263,24 +275,6 @@ public class CleaningService
             rules.Add(new ExclusionRule(p.TrimEnd('\\') + "\\", ex.Pattern));
     }
 
-    // Probe whether a file is deletable right now by requesting DELETE access via CreateFileW.
-    // If another process holds it open without FILE_SHARE_DELETE, this fails and we skip it.
-    // Yes, theres a TOCTOU gap between Analyze and Clean;file state can change in between
-    // Worst case: we report a slightly off size or try to delete something that moved. Both are caught silently.
-    //The goal here is simply to avoid counting files that are already undeletable right now
-    private static long TryGetDeletableSize(string path)
-    {
-        const uint DELETE = 0x00010000;
-        const uint FILE_SHARE_ALL = 0x7;   // Read | Write | Delete
-        const uint OPEN_EXISTING = 3;
-
-        using var handle = CreateFileW(path, DELETE, FILE_SHARE_ALL,
-                                       IntPtr.Zero, OPEN_EXISTING, 0, IntPtr.Zero);
-        if (handle.IsInvalid) return -1;   // locked; skip!
-
-        try { return new FileInfo(path).Length; }
-        catch { return -1; }
-    }
 
     // True if any rule matches;short-circuits on the first hit
     private static bool IsExcluded(string path, List<ExclusionRule> rules)
@@ -348,12 +342,4 @@ public class CleaningService
     {
         public void Report(string path) => inner.Report($"{prefix}  ›  {path}");
     }
-
-    // --- P/Invoke -------------------------------------------------
-
-    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-    private static extern SafeFileHandle CreateFileW(
-        string lpFileName, uint dwDesiredAccess, uint dwShareMode,
-        IntPtr lpSecurityAttributes, uint dwCreationDisposition,
-        uint dwFlagsAndAttributes, IntPtr hTemplateFile);
 }
