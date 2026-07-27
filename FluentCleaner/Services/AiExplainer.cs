@@ -68,6 +68,7 @@ public static class AiExplainer
         }
         catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine(ex);
             return ResourceService.Fmt("AI_NetworkError", ex.Message);
         }
     }
@@ -162,6 +163,7 @@ public static class AiExplainer
         }
         catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine(ex);
             return $"{errorPrefix}Could not reach Groq API: {ex.Message}";
         }
     }
@@ -199,7 +201,11 @@ public static class AiExplainer
             var text = root.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString();
             return "✓ " + text;
         }
-        catch (Exception ex) { return "✗ " + ex.Message; }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(ex);
+            return "✗ " + ex.Message;
+        }
     }
 
     // Returns " Please respond in German." etc. so empty only for English.
@@ -218,7 +224,11 @@ public static class AiExplainer
             var name = CultureInfo.GetCultureInfo(lang).Parent.EnglishName;
             return $" Please respond in {name}.";
         }
-        catch { return string.Empty; }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(ex);
+            return string.Empty;
+        }
     }
 
     //build a prompt with real paths so the model knows exactly what gets cleaned
