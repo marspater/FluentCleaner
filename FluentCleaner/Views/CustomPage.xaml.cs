@@ -236,7 +236,14 @@ public sealed partial class CustomPage : Page, IPageActions, ISearchablePage
 
         if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
 
-        try { File.Delete(vm.FilePath); } catch { }
+        try
+        {
+            File.Delete(vm.FilePath);
+        }
+        catch (Exception ex)
+        {
+            lblStatus.Text = $"{vm.Name}: error — {ex.Message}";
+        }
         LoadEntries();
     }
 
