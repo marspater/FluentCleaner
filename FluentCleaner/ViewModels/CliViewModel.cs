@@ -127,7 +127,7 @@ public partial class CliViewModel : ObservableObject
             case "appx":       await _appx.ExecuteAsync(arg, Output, v => IsBusy = v);          break;
             case "theme":      RunTheme(arg);                                                    break;
             case "backdrop":   RunBackdrop(arg);                                                 break;
-            case "drives":     RunDrives();                                                      break;
+            case "drives":     await RunDrivesAsync();                                           break;
             case "version":    Output.Add(ResourceService.Fmt("CLI_Version", AppInfo.VersionString));       break;
             case "clear":      Output.Clear();                                                   break;
             case "help":       RunHelp();                                                        break;
@@ -139,18 +139,38 @@ public partial class CliViewModel : ObservableObject
 
     // --- builtins (drives, theme, backdrop, help, version, clear) ---------------
 
-    private void RunDrives()
+    private async Task RunDrivesAsync()
     {
-        var drives = DriveInfo.GetDrives().Where(d => d.IsReady).ToList();
-        if (drives.Count == 0) { Output.Add(ResourceService.Get("CLI_NoDrives")); return; }
-
-        foreach (var d in drives)
+        IsBusy = true;
+        try
         {
-            var used   = d.TotalSize - d.AvailableFreeSpace;
-            var pct    = (int)(used * 100.0 / d.TotalSize);
-            var filled = pct / 5; // 20-char bar, each block = 5%
-            var bar    = new string('█', filled) + new string('░', 20 - filled);
-            Output.Add($"  {d.Name[..2],-3} [{bar}]  {ScanResult.FormatBytes(used),9} / {ScanResult.FormatBytes(d.TotalSize),-9}  {pct}%");
+            var drivesInfo = await Task.Run(() =>
+            {
+                return DriveInfo.GetDrives()
+                    .Where(d => d.IsReady)
+                    .Select(d => new
+                    {
+                        d.Name,
+                        d.TotalSize,
+                        d.AvailableFreeSpace
+                    })
+                    .ToList();
+            });
+
+            if (drivesInfo.Count == 0) { Output.Add(ResourceService.Get("CLI_NoDrives")); return; }
+
+            foreach (var d in drivesInfo)
+            {
+                var used = d.TotalSize - d.AvailableFreeSpace;
+                var pct = (int)(used * 100.0 / d.TotalSize);
+                var filled = pct / 5; // 20-char bar, each block = 5%
+                var bar = new string('█', filled) + new string('░', 20 - filled);
+                Output.Add($"  {d.Name[..2],-3} [{bar}]  {ScanResult.FormatBytes(used),9} / {ScanResult.FormatBytes(d.TotalSize),-9}  {pct}%");
+            }
+        }
+        finally
+        {
+            IsBusy = false;
         }
     }
 
