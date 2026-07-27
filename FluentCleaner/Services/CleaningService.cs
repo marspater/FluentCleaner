@@ -55,13 +55,13 @@ public class CleaningService
                 }
             }
             catch (OperationCanceledException) { throw; }  //cancel must reach the caller, not get swallowed
-            catch { }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException) { }
         }
 
         foreach (var regKey in entry.RegKeys)
         {
             try { result.RegistryToDelete.AddRange(FindRegistryItems(regKey)); }
-            catch { }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException) { }
         }
 
         return result;
@@ -98,7 +98,7 @@ public class CleaningService
         {
             IEnumerable<string> files;
             try { files = Directory.EnumerateFiles(root, p); }
-            catch { files = []; }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException) { files = []; }
             foreach (var f in files)
                 if (seen.Add(f))   //skip if another pattern already matched this file
                     yield return f;
@@ -113,7 +113,7 @@ public class CleaningService
         try
         { dirs = Directory.EnumerateDirectories(root)
                               .Where(d => (File.GetAttributes(d) & FileAttributes.ReparsePoint) == 0); }
-        catch { yield break; }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException) { yield break; }
 
         foreach (var sub in dirs)
         {
@@ -168,7 +168,7 @@ public class CleaningService
                 bytes += size;
                 progress?.Report(ResourceService.Fmt("Prog_Deleted", file));
             }
-            catch { } //in use or already gone; skip silently
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException) { } //in use or already gone; skip silently
         }
 
         foreach (var regItem in result.RegistryToDelete)
@@ -179,7 +179,7 @@ public class CleaningService
                 count++;
                 progress?.Report(ResourceService.Fmt("Prog_Registry", regItem));
             }
-            catch { }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException) { }
         }
 
         // REMOVESELF: prune directories that are now empty
@@ -231,7 +231,7 @@ public class CleaningService
             if (Directory.GetFileSystemEntries(path).Length == 0)
                 Directory.Delete(path);
         }
-        catch { }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException) { }
     }
 
     // --- Helpers --------------------------------------------------
@@ -279,7 +279,7 @@ public class CleaningService
         if (handle.IsInvalid) return -1;   // locked; skip!
 
         try { return new FileInfo(path).Length; }
-        catch { return -1; }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException) { return -1; }
     }
 
     // True if any rule matches;short-circuits on the first hit
