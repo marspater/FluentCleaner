@@ -55,13 +55,13 @@ public class CleaningService
                 }
             }
             catch (OperationCanceledException) { throw; }  //cancel must reach the caller, not get swallowed
-            catch { }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Error analyzing file key {fileKey.Path}: {ex.Message}"); }
         }
 
         foreach (var regKey in entry.RegKeys)
         {
             try { result.RegistryToDelete.AddRange(FindRegistryItems(regKey)); }
-            catch { }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Error analyzing registry key {regKey.KeyPath}: {ex.Message}"); }
         }
 
         return result;
