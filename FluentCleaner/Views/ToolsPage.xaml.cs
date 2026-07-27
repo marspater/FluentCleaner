@@ -327,13 +327,13 @@ public sealed partial class ToolsPage : Page, ISearchablePage
             ? ExtensionsDir
             : AppDomain.CurrentDomain.BaseDirectory;
         try { Process.Start("explorer.exe", target); }
-        catch { }
+        catch (Exception ex) { Debug.WriteLine($"Failed to open folder: {ex.Message}"); }
     }
 
     private void btnGitHub_Click(object sender, RoutedEventArgs e)
     {
         try { Process.Start(new ProcessStartInfo(ExtensionsGitHub) { UseShellExecute = true }); }
-        catch { }
+        catch (Exception ex) { Debug.WriteLine($"Failed to open GitHub link: {ex.Message}"); }
     }
 
     // ---------------- Empty state helpers ----------------
@@ -376,7 +376,7 @@ public sealed partial class ToolsPage : Page, ISearchablePage
         var url = linkPoweredBy.Tag?.ToString();
         if (string.IsNullOrWhiteSpace(url)) return;
         try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); }
-        catch { }
+        catch (Exception ex) { Debug.WriteLine($"Failed to open PoweredBy link: {ex.Message}"); }
     }
 
     // ---------------- Log output ----------------
@@ -476,7 +476,7 @@ public sealed partial class ToolsPage : Page, ISearchablePage
                     description = line.TrimStart('#').Trim();
             }
         }
-        catch { }
+        catch (Exception ex) { Debug.WriteLine($"Failed to read script metadata: {ex.Message}"); }
 
         return new ScriptMeta
         {
