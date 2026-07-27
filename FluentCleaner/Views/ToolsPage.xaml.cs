@@ -13,7 +13,35 @@ public enum ToolsCategory
     All, System, Privacy, Network, Apps, Debloat
 }
 
-public record ToolsDefinition(string Title, string Icon, string Path, ScriptMeta Meta);
+public class ToolsDefinition
+{
+    public string Title { get; set; }
+    public string Icon { get; set; }
+    public string ScriptPath { get; set; }
+    public ScriptMeta Meta { get; set; }
+
+    public string Description => Meta?.Description;
+    public ToolsCategory Category => Meta?.Category ?? ToolsCategory.All;
+    public List<string> Options => Meta?.Options ?? new List<string>();
+    public bool SupportsInput => Meta?.SupportsInput ?? false;
+    public string InputPlaceholder => Meta?.InputPlaceholder;
+    public string PoweredByText => Meta?.PoweredByText;
+    public string PoweredByUrl => Meta?.PoweredByUrl;
+    public bool UseConsole => Meta?.UseConsole ?? false;
+    public bool UseLog => Meta?.UseLog ?? false;
+
+    public ToolsDefinition(string title, string icon, string scriptPath, ScriptMeta meta)
+    {
+        Title = title;
+        Icon = icon;
+        ScriptPath = scriptPath;
+        Meta = meta;
+    }
+    public ToolsDefinition()
+    {
+    }
+}
+
 
 public record ScriptMeta { public string Description { get; init; } = ""; public List<string> Options { get; init; } = new(); public ToolsCategory Category { get; init; } = ToolsCategory.All; public bool UseConsole { get; init; } = false; public bool UseLog { get; init; } = false; public bool SupportsInput { get; init; } = false; public string InputPlaceholder { get; init; } = ""; public string PoweredByText { get; init; } = ""; public string PoweredByUrl { get; init; } = ""; }
 

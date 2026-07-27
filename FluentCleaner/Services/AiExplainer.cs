@@ -54,7 +54,7 @@ public static class AiExplainer
             if (root.TryGetProperty("error", out var err))
             {
                 var msg = err.TryGetProperty("message", out var m) ? m.GetString() : "Unknown error";
-                return ResourceService.Fmt("AI_ApiError", msg);
+                return ResourceService.Fmt("AI_ApiError", msg ?? string.Empty);
             }
 
             var text = root
