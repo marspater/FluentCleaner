@@ -44,7 +44,7 @@ public sealed partial class NewCleanerDialog : ContentDialog
     // --- Event handlers --------------------------------------------------
     private void TypeBtn_Click(object sender, RoutedEventArgs e)
     {
-        var isPs1 = sender == btnPs1;
+        var isPs1 = ReferenceEquals(sender, btnPs1);
         btnIni.IsChecked = !isPs1;
         btnPs1.IsChecked =  isPs1;
     }

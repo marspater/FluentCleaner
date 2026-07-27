@@ -1,6 +1,5 @@
 // Imported and adapted from my Winslopr app https://github.com/builtbybel/Winslopr/blob/main/docs/extensions.md
 // Jut reused here with namespace changes only.
-using FluentCleaner.Tools;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System.Collections.ObjectModel;
@@ -8,6 +7,61 @@ using System.Diagnostics;
 using System.Text;
 
 namespace FluentCleaner.Views;
+
+public enum ToolsCategory
+{
+    All, System, Privacy, Network, Apps, Debloat
+}
+
+public class ToolsDefinition
+{
+    public string Title { get; set; } = string.Empty;
+    public string Icon { get; set; } = string.Empty;
+    public string ScriptPath { get; set; } = string.Empty;
+    public ScriptMeta Meta { get; set; } = new ScriptMeta();
+
+    public string Description => Meta?.Description ?? string.Empty;
+    public ToolsCategory Category => Meta?.Category ?? ToolsCategory.All;
+    public List<string> Options => Meta?.Options ?? new List<string>();
+    public bool SupportsInput => Meta?.SupportsInput ?? false;
+    public string InputPlaceholder => Meta?.InputPlaceholder ?? string.Empty;
+    public string PoweredByText => Meta?.PoweredByText ?? string.Empty;
+    public string PoweredByUrl => Meta?.PoweredByUrl ?? string.Empty;
+    public bool UseConsole => Meta?.UseConsole ?? false;
+    public bool UseLog => Meta?.UseLog ?? false;
+
+    public ToolsDefinition(string title, string icon, string scriptPath, ScriptMeta meta)
+    {
+        Title = title ?? string.Empty;
+        Icon = icon ?? string.Empty;
+        ScriptPath = scriptPath ?? string.Empty;
+        Meta = meta ?? new ScriptMeta();
+    }
+    public ToolsDefinition()
+    {
+        Title = string.Empty;
+        Icon = string.Empty;
+        ScriptPath = string.Empty;
+        Meta = new ScriptMeta();
+    }
+}
+
+
+public record ScriptMeta
+{
+    public string Description { get; init; } = "";
+    public List<string> Options { get; init; } = new();
+    public ToolsCategory Category { get; init; } = ToolsCategory.All;
+    public bool UseConsole { get; init; } = false;
+    public bool UseLog { get; init; } = false;
+    public bool SupportsInput { get; init; } = false;
+    public string InputPlaceholder { get; init; } = "";
+    public string PoweredByText { get; init; } = "";
+    public string PoweredByUrl { get; init; } = "";
+
+    public ScriptMeta() {}
+}
+
 
 public sealed partial class ToolsPage : Page, ISearchablePage
 {
