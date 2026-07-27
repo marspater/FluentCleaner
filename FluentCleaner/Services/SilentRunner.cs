@@ -115,6 +115,9 @@ public static class SilentRunner
             Directory.CreateDirectory(Path.GetDirectoryName(LogFile)!);
             await File.AppendAllTextAsync(LogFile, content);
         }
-        catch { }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[SilentRunner] Log write failed: {ex}");
+        }
     }
 }
