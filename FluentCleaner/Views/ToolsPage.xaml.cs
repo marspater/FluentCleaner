@@ -1,6 +1,5 @@
 // Imported and adapted from my Winslopr app https://github.com/builtbybel/Winslopr/blob/main/docs/extensions.md
 // Jut reused here with namespace changes only.
-using FluentCleaner.Tools;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System.Collections.ObjectModel;
@@ -8,6 +7,16 @@ using System.Diagnostics;
 using System.Text;
 
 namespace FluentCleaner.Views;
+
+public enum ToolsCategory
+{
+    All, System, Privacy, Network, Apps, Debloat
+}
+
+public record ToolsDefinition(string Title, string Icon, string Path, ScriptMeta Meta);
+
+public record ScriptMeta { public string Description { get; init; } = ""; public List<string> Options { get; init; } = new(); public ToolsCategory Category { get; init; } = ToolsCategory.All; public bool UseConsole { get; init; } = false; public bool UseLog { get; init; } = false; public bool SupportsInput { get; init; } = false; public string InputPlaceholder { get; init; } = ""; public string PoweredByText { get; init; } = ""; public string PoweredByUrl { get; init; } = ""; }
+
 
 public sealed partial class ToolsPage : Page, ISearchablePage
 {
