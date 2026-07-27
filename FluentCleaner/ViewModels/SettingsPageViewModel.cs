@@ -117,7 +117,11 @@ public partial class SettingsPageViewModel : ObservableObject
             var name    = (neutral ?? ci).NativeName;
             return string.IsNullOrEmpty(name) ? code : char.ToUpper(name[0]) + name[1..];
         }
-        catch { return code; }   // unknown tag? show the raw code rather than crashing
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[NativeName] Failed to get native name for {code}: {ex}");
+            return code;
+        }   // unknown tag? show the raw code rather than crashing
     }
 
     // --- Database toggles -----------------------------------------------------
@@ -354,7 +358,12 @@ public partial class SettingsPageViewModel : ObservableObject
             RestartRequired = true;
             return true;
         }
-        catch (Exception ex) { StatusText = ResourceService.Fmt("St_DownloadFailed", ex.Message); return false; }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[DownloadFileAsync] Failed to download {label}: {ex}");
+            StatusText = ResourceService.Fmt("St_DownloadFailed", ex.Message);
+            return false;
+        }
         finally              { IsBusy = false; }
     }
 
@@ -376,6 +385,10 @@ public partial class SettingsPageViewModel : ObservableObject
             var lines = File.ReadLines(path).Count(l => l.StartsWith('[') && !l.StartsWith("[Winapp2"));
             return ResourceService.Fmt("St_FileInfo", lines, fi.Length / 1024, fi.LastWriteTime.ToString("yyyy-MM-dd"));
         }
-        catch { return ""; }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[BuildFileInfo] Error reading file info for {path}: {ex}");
+            return "";
+        }
     }
 }
