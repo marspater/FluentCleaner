@@ -55,13 +55,13 @@ public class CleaningService
                 }
             }
             catch (OperationCanceledException) { throw; }  //cancel must reach the caller, not get swallowed
-            catch { }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine(ex); }
         }
 
         foreach (var regKey in entry.RegKeys)
         {
             try { result.RegistryToDelete.AddRange(FindRegistryItems(regKey)); }
-            catch { }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine(ex); }
         }
 
         return result;
@@ -168,7 +168,7 @@ public class CleaningService
                 bytes += size;
                 progress?.Report(ResourceService.Fmt("Prog_Deleted", file));
             }
-            catch { } //in use or already gone; skip silently
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine(ex); } //in use or already gone; skip silently
         }
 
         foreach (var regItem in result.RegistryToDelete)
@@ -179,7 +179,7 @@ public class CleaningService
                 count++;
                 progress?.Report(ResourceService.Fmt("Prog_Registry", regItem));
             }
-            catch { }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine(ex); }
         }
 
         // REMOVESELF: prune directories that are now empty
@@ -231,7 +231,7 @@ public class CleaningService
             if (Directory.GetFileSystemEntries(path).Length == 0)
                 Directory.Delete(path);
         }
-        catch { }
+        catch (Exception ex) { System.Diagnostics.Debug.WriteLine(ex); }
     }
 
     // --- Helpers --------------------------------------------------
