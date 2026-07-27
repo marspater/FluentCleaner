@@ -1,11 +1,15 @@
 {
   "dotnet.defaultSolution": "FluentCleaner.sln",
-  "dotnet.server.suppressExtensionSwitches": true,
+  "omnisharp.defaultLaunchSolution": "FluentCleaner.sln",
+  "omnisharp.projectLoadTimeout": 60,
+  "omnisharp.enableMsBuildLoadProjectsOnDemand": false,
   "omnisharp.autoStart": true,
   "omnisharp.enableRoslynAnalyzers": true,
   "omnisharp.enableImportCompletion": true,
+  "dotnet.preferAnalysisInBackground": true,
   "files.exclude": {
     "**/bin": true,
-    "**/obj": true
+    "**/obj": true,
+    "**/.vs": true
   }
 }
