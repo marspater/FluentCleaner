@@ -236,7 +236,14 @@ public sealed partial class CustomPage : Page, IPageActions, ISearchablePage
 
         if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
 
-        try { File.Delete(vm.FilePath); } catch { }
+        try
+        {
+            File.Delete(vm.FilePath);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to delete custom cleaner: {ex.Message}");
+        }
         LoadEntries();
     }
 
@@ -321,7 +328,10 @@ public sealed partial class CustomPage : Page, IPageActions, ISearchablePage
             File.WriteAllText(Path.Combine(CustomDir, name + ext), content);
             LoadEntries();
         }
-        catch { }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to save custom cleaner: {ex.Message}");
+        }
     }
 }
 
