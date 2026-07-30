@@ -37,7 +37,14 @@ public sealed partial class NewCleanerDialog : ContentDialog
             btnIni.IsEnabled = false;
             btnPs1.IsEnabled = false;
 
-            try { contentBox.Text = File.ReadAllText(existing.FilePath); } catch { }
+            try
+            {
+                contentBox.Text = File.ReadAllText(existing.FilePath);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to load file: {ex}");
+            }
         }
     }
 
