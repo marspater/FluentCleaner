@@ -123,7 +123,13 @@ public class PathExpander
                     ResolveRecursive(Path.Combine(match, string.Join('\\', remaining)), results);
             }
         }
-        catch (UnauthorizedAccessException) { }
-        catch (IOException) { }
+        catch (UnauthorizedAccessException ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[PathExpander] Failed to access directory: {basePath}. Error: {ex.Message}");
+        }
+        catch (IOException ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[PathExpander] Failed to access directory: {basePath}. Error: {ex.Message}");
+        }
     }
 }
