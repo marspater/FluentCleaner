@@ -31,6 +31,7 @@ public class CleaningService
     {
         var result   = new ScanResult { Entry = entry };
         var excluded = BuildExclusions(entry);
+        var filesToDeleteSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         // Wrap the caller's progress so every path report is prefixed with the entry name.
         // e.g. "Firefox Cache >>C:\Users\...\Cache\Cache_Data"
@@ -45,12 +46,13 @@ public class CleaningService
             {
                 foreach (var file in FindFiles(fileKey, excluded, entryProgress, token))
                 {
-                    if (result.FilesToDelete.Contains(file)) continue;
+                    if (filesToDeleteSet.Contains(file)) continue;
 
                     // Skip files that are truly inaccessible (hard lock / no permissions).
                     var size = TryGetDeletableSize(file);
                     if (size < 0) continue;
 
+                    filesToDeleteSet.Add(file);
                     result.FilesToDelete.Add(file);
                     result.TotalBytes += size;
                 }
