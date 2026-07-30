@@ -4,6 +4,8 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FluentCleaner", "FluentCleaner\FluentCleaner.csproj", "{8A4B8C1D-E5F6-4A7B-8C9D-0E1F2A3B4C5D}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FluentCleaner.Tests", "FluentCleaner.Tests\FluentCleaner.Tests.csproj", "{7B5A6C4D-3E2F-1A0B-9C8D-7E6F5A4B3C2D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -14,5 +16,9 @@ Global
 		{8A4B8C1D-E5F6-4A7B-8C9D-0E1F2A3B4C5D}.Debug|x64.Build.0 = Debug|x64
 		{8A4B8C1D-E5F6-4A7B-8C9D-0E1F2A3B4C5D}.Release|x64.ActiveCfg = Release|x64
 		{8A4B8C1D-E5F6-4A7B-8C9D-0E1F2A3B4C5D}.Release|x64.Build.0 = Release|x64
+		{7B5A6C4D-3E2F-1A0B-9C8D-7E6F5A4B3C2D}.Debug|x64.ActiveCfg = Debug|x64
+		{7B5A6C4D-3E2F-1A0B-9C8D-7E6F5A4B3C2D}.Debug|x64.Build.0 = Debug|x64
+		{7B5A6C4D-3E2F-1A0B-9C8D-7E6F5A4B3C2D}.Release|x64.ActiveCfg = Release|x64
+		{7B5A6C4D-3E2F-1A0B-9C8D-7E6F5A4B3C2D}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 EndGlobal

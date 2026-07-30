@@ -256,6 +256,31 @@ If you want to support development financially, you can do so here:
 
 </details>
 
+## 🛠️ Building & Testing from Source
+
+### Requirements
+- **SDK**: .NET 10 SDK (`net10.0-windows10.0.19041.0`)
+- **Runtime**: Windows App SDK 2.3.1
+- **OS**: Windows 10 (Build 19041+) or Windows 11 (x64 / ARM64)
+
+### Build Instructions
+```powershell
+# Build solution using dotnet CLI
+dotnet build FluentCleaner.sln
+
+# Run main application
+dotnet run --project FluentCleaner/FluentCleaner.csproj
+```
+
+### Running Unit Tests
+```powershell
+# Execute xUnit test suite
+dotnet test FluentCleaner.Tests/FluentCleaner.Tests.csproj
+```
+
+### Full Technical Log
+Detailed release notes, security hardening, performance benchmarks, and code health updates are documented in [CHANGELOG.md](CHANGELOG.md).
+
 ## Optimizer Myths
 
 <details>
