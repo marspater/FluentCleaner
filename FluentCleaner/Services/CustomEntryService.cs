@@ -22,8 +22,10 @@ public class CustomEntryService
 
         // .ini entries parsed as Winapp2;detection criteria honoured when present,
         // skipped entirely when the user deliberately omitted them
-        foreach (var path in Directory.GetFiles(CustomDir, "*.ini")
-                                      .Where(f => !f.EndsWith(".ini.disabled", StringComparison.OrdinalIgnoreCase)))
+        var filePaths = await Task.Run(() => Directory.EnumerateFiles(CustomDir, "*.ini")
+                                      .Where(f => !f.EndsWith(".ini.disabled", StringComparison.OrdinalIgnoreCase))
+                                      .ToArray());
+        foreach (var path in filePaths)
         {
             foreach (var ce in await _parser.ParseFileAsync(path))
             {
