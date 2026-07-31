@@ -39,8 +39,13 @@ public class ExcludeKeyEntry
                 _      => ExcludeType.File
             };
         }
-        if (parts.Length > 1) entry.Path    = parts[1].Trim();
-        if (parts.Length > 2) entry.Pattern = parts[2].Trim();
+        if (parts.Length > 1) entry.Path = parts[1].Trim();
+        if (parts.Length > 2)
+        {
+            var pattern = parts[2].Trim();
+            if (!string.IsNullOrWhiteSpace(pattern))
+                entry.Pattern = pattern;
+        }
 
         return entry;
     }
