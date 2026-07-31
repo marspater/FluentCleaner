@@ -120,6 +120,40 @@ public class Winapp2ParserTests
         Assert.Equal("Community App", result[0].Name);
     }
 
+
+    [Theory]
+    [InlineData(@"%AppData%\Test|")]
+    [InlineData(@"%AppData%\Test||RECURSE")]
+    public void Parse_DefaultsEmptyFileKeyPatternToAllFiles(string fileKey)
+    {
+        var content = $"""
+                      [Test App]
+                      Detect=HKCU\Software\Test
+                      FileKey1={fileKey}
+                      """;
+
+        var result = _parser.Parse(content);
+
+        Assert.Single(result);
+        Assert.Equal("*.*", result[0].FileKeys[0].Pattern);
+    }
+
+    [Fact]
+    public void Parse_TreatsEmptyExcludeKeyPatternAsDirectoryExclusion()
+    {
+        var content = """
+                      [Test App]
+                      Detect=HKCU\Software\Test
+                      FileKey1=%AppData%\Test|*.*
+                      ExcludeKey1=PATH|%AppData%\Test\Keep|
+                      """;
+
+        var result = _parser.Parse(content);
+
+        Assert.Single(result);
+        Assert.Null(result[0].ExcludeKeys[0].Pattern);
+    }
+
     [Fact]
     public void Parse_IgnoresInvalidEntries()
     {

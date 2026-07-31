@@ -31,15 +31,19 @@ public class FileKeyEntry
         // parts[1] can be either a file pattern OR a flag (when no pattern is given)
         if (parts.Length == 2)
         {
-            var p = parts[1].Trim().ToUpperInvariant();
-            if (p is "RECURSE" or "REMOVESELF")
-                entry.Flag = p == "RECURSE" ? FileKeyFlag.Recurse : FileKeyFlag.RemoveSelf;
-            else
-                entry.Pattern = parts[1].Trim();
+            var p = parts[1].Trim();
+            if (p.Equals("RECURSE", StringComparison.OrdinalIgnoreCase) ||
+                p.Equals("REMOVESELF", StringComparison.OrdinalIgnoreCase))
+                entry.Flag = p.Equals("RECURSE", StringComparison.OrdinalIgnoreCase) ? FileKeyFlag.Recurse : FileKeyFlag.RemoveSelf;
+            else if (!string.IsNullOrWhiteSpace(p))
+                entry.Pattern = p;
         }
         else if (parts.Length > 2)
         {
-            entry.Pattern = parts[1].Trim();
+            var pattern = parts[1].Trim();
+            if (!string.IsNullOrWhiteSpace(pattern))
+                entry.Pattern = pattern;
+
             entry.Flag = parts[2].Trim().ToUpperInvariant() switch
             {
                 "RECURSE"    => FileKeyFlag.Recurse,
