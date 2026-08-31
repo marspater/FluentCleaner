@@ -91,7 +91,10 @@ public partial class AnalyzerViewModel : ObservableObject
                 RootPath = LocalDrives[0];
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[AnalyzerViewModel] Failed to load drives: {ex.Message}");
+        }
     }
 
     partial void OnIsBusyChanged(bool value)
