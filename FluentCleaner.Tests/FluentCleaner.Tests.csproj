@@ -9,6 +9,8 @@
     <EnableMsixTooling>false</EnableMsixTooling>
     <EnableCoreMsixTooling>false</EnableCoreMsixTooling>
     <GenerateProjectPriFile>false</GenerateProjectPriFile>
+    <AppxGeneratePriEnabled>false</AppxGeneratePriEnabled>
+    <AppxGeneratePrisForPortableLibrariesEnabled>false</AppxGeneratePrisForPortableLibrariesEnabled>
   </PropertyGroup>
 
   <ItemGroup>
