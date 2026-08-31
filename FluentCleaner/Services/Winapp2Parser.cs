@@ -1,4 +1,5 @@
 using FluentCleaner.Models;
+using System.IO;
 using System.Text.RegularExpressions;
 
 namespace FluentCleaner.Services;
@@ -19,9 +20,10 @@ public class Winapp2Parser
         var entries = new List<CleanerEntry>();
         CleanerEntry? current = null;
 
-        //Split on both \r and \n;WinUI 3 TextBox saves with \r only (not \r\n),
-        //so splitting on just \n would leave the entire file as a single line
-        foreach (var rawLine in content.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
+        // Using StringReader avoids allocating an array of all line strings from content.Split()
+        using var reader = new StringReader(content);
+        string? rawLine;
+        while ((rawLine = reader.ReadLine()) != null)
         {
             var line = rawLine.Trim();
             if (line.Length == 0 || line[0] == ';' || line[0] == '#') continue;
