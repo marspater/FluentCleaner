@@ -182,8 +182,10 @@ public partial class AnalyzerViewModel : ObservableObject
                         tempItems.Add((System.IO.Path.GetFileName(dir), dir, size, true));
                     }
                 }
-                catch (UnauthorizedAccessException) { }
-                catch (DirectoryNotFoundException) { }
+                catch (Exception ex) when (ex is UnauthorizedAccessException or DirectoryNotFoundException or IOException or System.Security.SecurityException)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[AnalyzerViewModel.ScanAsync] Error enumerating directories in {RootPath}: {ex.Message}");
+                }
 
                 // Enumerate files
                 try
@@ -193,12 +195,14 @@ public partial class AnalyzerViewModel : ObservableObject
                     {
                         token.ThrowIfCancellationRequested();
                         long size = 0;
-                        try { size = new FileInfo(file).Length; } catch { }
+                        try { size = new FileInfo(file).Length; } catch (Exception ex) when (ex is UnauthorizedAccessException or DirectoryNotFoundException or IOException or System.Security.SecurityException) { System.Diagnostics.Debug.WriteLine($"[AnalyzerViewModel.ScanAsync] Error getting file length for {file}: {ex.Message}"); }
                         tempItems.Add((System.IO.Path.GetFileName(file), file, size, false));
                     }
                 }
-                catch (UnauthorizedAccessException) { }
-                catch (DirectoryNotFoundException) { }
+                catch (Exception ex) when (ex is UnauthorizedAccessException or DirectoryNotFoundException or IOException or System.Security.SecurityException)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[AnalyzerViewModel.ScanAsync] Error enumerating files in {RootPath}: {ex.Message}");
+                }
 
             }, token);
 
@@ -256,9 +260,15 @@ public partial class AnalyzerViewModel : ObservableObject
                 size += CalculateDirectorySize(subDir.FullName, token, progress);
             }
         }
-        catch (UnauthorizedAccessException) { }
-        catch (DirectoryNotFoundException) { }
-        catch (Exception) { }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or DirectoryNotFoundException or IOException or System.Security.SecurityException)
+        {
+            System.Diagnostics.Debug.WriteLine($"[AnalyzerViewModel.CalculateDirectorySize] Error accessing path {path}: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[AnalyzerViewModel.CalculateDirectorySize] Unexpected error accessing path {path}: {ex}");
+        }
         return size;
     }
 }
