@@ -7,8 +7,9 @@
     <IsPackable>false</IsPackable>
     <AppxGeneratePriEnabled>false</AppxGeneratePriEnabled>
     <AppxGeneratePrisForPortableLibrariesEnabled>false</AppxGeneratePrisForPortableLibrariesEnabled>
+    <WindowsSDKBuildToolsVersion>10.0.28000.1839</WindowsSDKBuildToolsVersion>
     <UseSdkBuildToolsPackage>true</UseSdkBuildToolsPackage>
-    <SDKIdentifier></SDKIdentifier>
+    <SDKIdentifier>None</SDKIdentifier>
     <WindowsAppSdkBootstrapInitialize>false</WindowsAppSdkBootstrapInitialize>
   </PropertyGroup>
 
@@ -28,11 +29,8 @@
     <ProjectReference Include="..\FluentCleaner\FluentCleaner.csproj" />
   </ItemGroup>
 
-  <!-- Override MSBuild targets in Microsoft.Windows.SDK.BuildTools.MSIX targets to no-op for tests -->
-  <Target Name="_GetSdkToolsPathsFromSdk" />
-  <Target Name="_GetSdkToolsPathsFromPackage" />
-  <Target Name="_GetSdkToolPaths" />
-  <Target Name="_GetSdkToolPathsFromPackage" />
-  <Target Name="_GetSdkToolPathsFromSdk" />
+  <Target Name="_GetSdkToolsPathsFromSdk" Override="true" />
+  <Target Name="_GetSdkToolsPathsFromPackage" Override="true" />
+  <Target Name="_GetSdkToolPaths" Override="true" />
 
 </Project>
