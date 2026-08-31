@@ -5,6 +5,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+    <EnableMsixTooling>false</EnableMsixTooling>
+    <AppxGeneratePriEnabled>false</AppxGeneratePriEnabled>
   </PropertyGroup>
 
   <ItemGroup>
