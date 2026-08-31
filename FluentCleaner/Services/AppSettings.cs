@@ -67,8 +67,18 @@ public class AppSettings
     public bool CleanHistoryEnabled { get; set; } = true;
     public List<CleanHistoryEntry> CleanHistory { get; set; } = [];
 
-    // Groq API key for AI entry explanations; null = not configured
-    public string? GroqApiKey { get; set; }
+    // Groq API key for AI entry explanations; null = not configured.
+    // Legacy plain-text property maintained for JSON deserialization migration.
+    [JsonPropertyName("GroqApiKey")]
+    public string? LegacyGroqApiKey { get; set; }
+
+    // Secure property accessor backed by DPAPI SecretStore
+    [JsonIgnore]
+    public string? GroqApiKey
+    {
+        get => SecretStore.LoadSecret("GroqApiKey");
+        set => SecretStore.SaveSecret("GroqApiKey", value);
+    }
 
     // true once the user dismisses the startup donation tip
     public bool DonationDismissed { get; set; } = false;
@@ -132,6 +142,15 @@ public class AppSettings
             if (!File.Exists(SettingsFile)) return new();
             var s = JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(SettingsFile), JsonOptions) ?? new();
             s.CustomWinapp2Path = NormalizePath(s.CustomWinapp2Path);
+
+            // Migrate legacy plain-text API key if present
+            if (!string.IsNullOrWhiteSpace(s.LegacyGroqApiKey))
+            {
+                s.GroqApiKey = s.LegacyGroqApiKey;
+                s.LegacyGroqApiKey = null;
+                s.Save();
+            }
+
             return s;
         }
         catch (Exception ex)
@@ -143,7 +162,11 @@ public class AppSettings
 
     // Export current settings to a file (for backup or sharing)
     public static void ExportTo(string path)
-        => File.WriteAllText(path, JsonSerializer.Serialize(Instance, JsonOptions));
+    {
+        // For export, we export settings without exposing sensitive secret plain-text.
+        // If needed, LegacyGroqApiKey is kept null so plain text is not written.
+        File.WriteAllText(path, JsonSerializer.Serialize(Instance, JsonOptions));
+    }
 
     // Import settings from a file and replace the current instance
     public static void ImportFrom(string path)
@@ -151,6 +174,13 @@ public class AppSettings
         var json = File.ReadAllText(path);
         var s = JsonSerializer.Deserialize<AppSettings>(json, JsonOptions) ?? new();
         s.CustomWinapp2Path = NormalizePath(s.CustomWinapp2Path);
+
+        if (!string.IsNullOrWhiteSpace(s.LegacyGroqApiKey))
+        {
+            s.GroqApiKey = s.LegacyGroqApiKey;
+            s.LegacyGroqApiKey = null;
+        }
+
         Instance = s;
         Instance.Save();
     }
