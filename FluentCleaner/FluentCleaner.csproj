@@ -15,6 +15,7 @@
     <WindowsPackageType>None</WindowsPackageType>
     <WindowsAppSDKSelfContained>false</WindowsAppSDKSelfContained>
     <WindowsAppSdkBootstrapInitialize>false</WindowsAppSdkBootstrapInitialize>
+    <UseSdkBuildToolsPackage>true</UseSdkBuildToolsPackage>
     <DefaultLanguage>en-US</DefaultLanguage>
     <DefaultResourceLanguage>en-US</DefaultResourceLanguage>
     <Nullable>enable</Nullable>
