@@ -188,7 +188,7 @@ public partial class AnalyzerViewModel : ObservableObject
                 // Enumerate files
                 try
                 {
-                    var files = Directory.GetFiles(RootPath);
+                    var files = Directory.EnumerateFiles(RootPath);
                     foreach (var file in files)
                     {
                         token.ThrowIfCancellationRequested();
