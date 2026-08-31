@@ -7,9 +7,8 @@
     <IsPackable>false</IsPackable>
     <AppxGeneratePriEnabled>false</AppxGeneratePriEnabled>
     <AppxGeneratePrisForPortableLibrariesEnabled>false</AppxGeneratePrisForPortableLibrariesEnabled>
-    <WindowsSDKBuildToolsVersion>10.0.28000.1839</WindowsSDKBuildToolsVersion>
     <UseSdkBuildToolsPackage>true</UseSdkBuildToolsPackage>
-    <SDKIdentifier>None</SDKIdentifier>
+    <WindowsSDKBuildToolsVersion>10.0.28000.1839</WindowsSDKBuildToolsVersion>
     <WindowsAppSdkBootstrapInitialize>false</WindowsAppSdkBootstrapInitialize>
   </PropertyGroup>
 
@@ -18,7 +17,6 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
-    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.1839" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
@@ -28,14 +26,5 @@
   <ItemGroup>
     <ProjectReference Include="..\FluentCleaner\FluentCleaner.csproj" />
   </ItemGroup>
-
-  <!-- Targets in Microsoft.Windows.SDK.BuildTools.MSIX.MrtCore.PriGen.targets -->
-  <Target Name="_GetSdkToolsPathsFromSdk" />
-  <Target Name="_GetSdkToolsPathsFromPackage" />
-  <Target Name="_GetSdkToolPaths" />
-
-  <!-- Targets in Microsoft.Build.Msix.Pri.targets / MrtCore.PriGen.targets from Microsoft.WindowsAppSDK -->
-  <Target Name="_GetSdkToolPathsFromSdk" />
-  <Target Name="_GetSdkToolPathsFromPackage" />
 
 </Project>
