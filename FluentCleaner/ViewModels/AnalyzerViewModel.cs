@@ -193,7 +193,14 @@ public partial class AnalyzerViewModel : ObservableObject
                     {
                         token.ThrowIfCancellationRequested();
                         long size = 0;
-                        try { size = new FileInfo(file).Length; } catch { }
+                        try
+                        {
+                            size = new FileInfo(file).Length;
+                        }
+                        catch (Exception ex)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"[AnalyzerViewModel] Failed to get length for file '{file}': {ex.Message}");
+                        }
                         tempItems.Add((System.IO.Path.GetFileName(file), file, size, false));
                     }
                 }
