@@ -274,7 +274,7 @@ public partial class CleanerPageViewModel : ObservableObject
 
     // --- Post-clean tasks -----------------------------------------------------
 
-    // Splits the free-text command box and runs each line via cmd so pipes work
+    // Splits the free-text command box and runs each executable command directly
     private static async Task RunPostCleanTasksAsync()
     {
         if (!AppSettings.Instance.PostCleanEnabled)
@@ -290,12 +290,16 @@ public partial class CleanerPageViewModel : ObservableObject
         {
             try
             {
+                var (fileName, arguments) = CommandLineParser.Parse(line);
+                if (string.IsNullOrWhiteSpace(fileName))
+                    continue;
+
                 using var process = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
                 {
-                    FileName    = "cmd.exe",
-                    ArgumentList = { "/c", line },
+                    FileName        = fileName,
+                    Arguments       = arguments,
                     UseShellExecute = false,
-                    CreateNoWindow = true
+                    CreateNoWindow  = true
                 });
 
                 if (process is not null)

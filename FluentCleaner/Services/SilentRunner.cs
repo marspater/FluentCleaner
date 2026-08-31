@@ -94,10 +94,14 @@ public static class SilentRunner
         {
             try
             {
+                var (fileName, arguments) = CommandLineParser.Parse(line);
+                if (string.IsNullOrWhiteSpace(fileName))
+                    continue;
+
                 using var p = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
                 {
-                    FileName        = "cmd.exe",
-                    ArgumentList    = { "/c", line },
+                    FileName        = fileName,
+                    Arguments       = arguments,
                     UseShellExecute = false,
                     CreateNoWindow  = true
                 });
