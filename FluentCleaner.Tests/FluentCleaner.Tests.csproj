@@ -9,7 +9,7 @@
     <AppxGeneratePrisForPortableLibrariesEnabled>false</AppxGeneratePrisForPortableLibrariesEnabled>
     <WindowsSDKBuildToolsVersion>10.0.28000.1839</WindowsSDKBuildToolsVersion>
     <UseSdkBuildToolsPackage>true</UseSdkBuildToolsPackage>
-    <SDKIdentifier>None</SDKIdentifier>
+    <SDKIdentifier></SDKIdentifier>
     <WindowsAppSdkBootstrapInitialize>false</WindowsAppSdkBootstrapInitialize>
   </PropertyGroup>
 
@@ -29,8 +29,13 @@
     <ProjectReference Include="..\FluentCleaner\FluentCleaner.csproj" />
   </ItemGroup>
 
-  <Target Name="_GetSdkToolsPathsFromSdk" Override="true" />
-  <Target Name="_GetSdkToolsPathsFromPackage" Override="true" />
-  <Target Name="_GetSdkToolPaths" Override="true" />
+  <!-- Targets in Microsoft.Windows.SDK.BuildTools.MSIX.MrtCore.PriGen.targets -->
+  <Target Name="_GetSdkToolsPathsFromSdk" />
+  <Target Name="_GetSdkToolsPathsFromPackage" />
+  <Target Name="_GetSdkToolPaths" />
+
+  <!-- Targets in Microsoft.Build.Msix.Pri.targets / MrtCore.PriGen.targets from Microsoft.WindowsAppSDK -->
+  <Target Name="_GetSdkToolPathsFromSdk" />
+  <Target Name="_GetSdkToolPathsFromPackage" />
 
 </Project>
