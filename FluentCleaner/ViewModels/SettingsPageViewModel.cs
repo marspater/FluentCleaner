@@ -371,9 +371,22 @@ public partial class SettingsPageViewModel : ObservableObject
 
     private void RefreshFileInfo()
     {
-        Winapp2Info = BuildFileInfo(Winapp2LocalPath);
-        Winapp3Info = BuildFileInfo(Winapp3LocalPath);
-        WinappxInfo = BuildFileInfo(WinappxLocalPath);
+        _ = RefreshFileInfoAsync();
+    }
+
+    private async Task RefreshFileInfoAsync()
+    {
+        var winapp2Path = Winapp2LocalPath;
+        var winapp3Path = Winapp3LocalPath;
+        var winappxPath = WinappxLocalPath;
+
+        var winapp2Task = Task.Run(() => BuildFileInfo(winapp2Path));
+        var winapp3Task = Task.Run(() => BuildFileInfo(winapp3Path));
+        var winappxTask = Task.Run(() => BuildFileInfo(winappxPath));
+
+        Winapp2Info = await winapp2Task;
+        Winapp3Info = await winapp3Task;
+        WinappxInfo = await winappxTask;
     }
 
     private static string BuildFileInfo(string path)

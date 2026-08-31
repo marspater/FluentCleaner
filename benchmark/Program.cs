@@ -8,47 +8,51 @@ class Program
 {
     static async Task Main()
     {
-        var CustomDir = "CustomTest";
-        if (!Directory.Exists(CustomDir))
+        string dummyFile = "test_winapp2.ini";
+        // Create a test file with 15,000 lines (simulating Winapp2.ini)
+        using (var writer = new StreamWriter(dummyFile))
         {
-            Directory.CreateDirectory(CustomDir);
-            for(int i = 0; i < 10000; i++)
+            for (int i = 0; i < 15000; i++)
             {
-                File.WriteAllText(Path.Combine(CustomDir, $"test_{i}.ini"), "");
+                if (i % 3 == 0) writer.WriteLine($"[App {i}]");
+                else writer.WriteLine($"FileKey{i}=C:\\Test\\*.*");
             }
         }
 
+        var fi = new FileInfo(dummyFile);
+
         // Warmup
-        var filesWarmup = Directory.GetFiles(CustomDir, "*.ini").ToList();
+        var warmupLines = File.ReadLines(dummyFile).Count(l => l.StartsWith('[') && !l.StartsWith("[Winapp2"));
 
+        int iterations = 100;
+
+        // Baseline: Sync File.ReadLines on UI/Main thread
         var sw = Stopwatch.StartNew();
-        var files = Directory.GetFiles(CustomDir, "*.ini")
-                             .Where(f => !f.EndsWith(".ini.disabled", StringComparison.OrdinalIgnoreCase))
-                             .ToList();
+        for (int i = 0; i < iterations; i++)
+        {
+            var lines = File.ReadLines(dummyFile).Count(l => l.StartsWith('[') && !l.StartsWith("[Winapp2"));
+            var info = $"{lines} entries | {fi.Length / 1024} KB | {fi.LastWriteTime:yyyy-MM-dd}";
+        }
         sw.Stop();
-        Console.WriteLine($"Sync Directory.GetFiles: {sw.ElapsedMilliseconds} ms, ticks: {sw.ElapsedTicks}");
+        double syncMsPerOp = sw.Elapsed.TotalMilliseconds / iterations;
+        Console.WriteLine($"Baseline Sync File.ReadLines: {sw.ElapsedMilliseconds} ms total ({syncMsPerOp:F3} ms/op)");
 
+        // Optimized: Async offloaded via Task.Run
         sw.Restart();
-        var files4 = Directory.EnumerateFiles(CustomDir, "*.ini")
-                             .Where(f => !f.EndsWith(".ini.disabled", StringComparison.OrdinalIgnoreCase))
-                             .ToList();
+        for (int i = 0; i < iterations; i++)
+        {
+            var info = await Task.Run(() =>
+            {
+                if (!File.Exists(dummyFile)) return "Not downloaded";
+                var fInfo = new FileInfo(dummyFile);
+                var lines = File.ReadLines(dummyFile).Count(l => l.StartsWith('[') && !l.StartsWith("[Winapp2"));
+                return $"{lines} entries | {fInfo.Length / 1024} KB | {fInfo.LastWriteTime:yyyy-MM-dd}";
+            });
+        }
         sw.Stop();
-        Console.WriteLine($"Sync Directory.EnumerateFiles: {sw.ElapsedMilliseconds} ms, ticks: {sw.ElapsedTicks}");
+        double asyncMsPerOp = sw.Elapsed.TotalMilliseconds / iterations;
+        Console.WriteLine($"Optimized Task.Run Async File Reading: {sw.ElapsedMilliseconds} ms total ({asyncMsPerOp:F3} ms/op)");
 
-        sw.Restart();
-        var files2 = await Task.Run(() => Directory.GetFiles(CustomDir, "*.ini")
-                             .Where(f => !f.EndsWith(".ini.disabled", StringComparison.OrdinalIgnoreCase))
-                             .ToList());
-        sw.Stop();
-        Console.WriteLine($"Async Task.Run with GetFiles: {sw.ElapsedMilliseconds} ms, ticks: {sw.ElapsedTicks}");
-
-        sw.Restart();
-        var files3 = await Task.Run(() => Directory.EnumerateFiles(CustomDir, "*.ini")
-                             .Where(f => !f.EndsWith(".ini.disabled", StringComparison.OrdinalIgnoreCase))
-                             .ToList());
-        sw.Stop();
-        Console.WriteLine($"Async Task.Run with EnumerateFiles: {sw.ElapsedMilliseconds} ms, ticks: {sw.ElapsedTicks}");
-
-        Directory.Delete(CustomDir, true);
+        if (File.Exists(dummyFile)) File.Delete(dummyFile);
     }
 }
