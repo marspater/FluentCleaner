@@ -25,8 +25,16 @@
     <ProjectReference Include="..\FluentCleaner\FluentCleaner.csproj" />
   </ItemGroup>
 
-  <Target Name="_GetSdkToolsPathsFromSdk" BeforeTargets="_GetSdkToolPaths">
-    <!-- No-op target override to prevent APPX3217 when building tests without full Windows SDK installed -->
+  <Target Name="_GetSdkToolsPathsFromSdk" BeforeTargets="_GetSdkToolPaths" Condition="'$(AppxGeneratePriEnabled)' != 'true'">
+    <!-- Override to avoid calling WinAppSdkGetSdkFileFullPath when AppxGeneratePriEnabled is false -->
+  </Target>
+
+  <Target Name="_GetSdkToolsPathsFromPackage" BeforeTargets="_GetSdkToolPaths" Condition="'$(AppxGeneratePriEnabled)' != 'true'">
+    <!-- Override to avoid calling WinAppSdkGetSdkFileFullPath when AppxGeneratePriEnabled is false -->
+  </Target>
+
+  <Target Name="_GetSdkToolPaths" Condition="'$(AppxGeneratePriEnabled)' != 'true'">
+    <!-- Override _GetSdkToolPaths to no-op on test project -->
   </Target>
 
 </Project>
