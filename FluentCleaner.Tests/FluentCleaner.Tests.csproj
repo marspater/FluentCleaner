@@ -9,7 +9,7 @@
     <AppxGeneratePrisForPortableLibrariesEnabled>false</AppxGeneratePrisForPortableLibrariesEnabled>
     <WindowsSDKBuildToolsVersion>10.0.28000.1839</WindowsSDKBuildToolsVersion>
     <UseSdkBuildToolsPackage>true</UseSdkBuildToolsPackage>
-    <SDKIdentifier></SDKIdentifier>
+    <SDKIdentifier>None</SDKIdentifier>
     <WindowsAppSdkBootstrapInitialize>false</WindowsAppSdkBootstrapInitialize>
   </PropertyGroup>
 
