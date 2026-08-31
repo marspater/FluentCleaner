@@ -94,14 +94,7 @@ public static class SilentRunner
         {
             try
             {
-                using var p = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-                {
-                    FileName        = "cmd.exe",
-                    ArgumentList    = { "/c", line },
-                    UseShellExecute = false,
-                    CreateNoWindow  = true
-                });
-                if (p is not null) await p.WaitForExitAsync();
+                await ProcessRunner.RunCommandAsync(line);
             }
             catch (Exception ex)
             {

@@ -290,16 +290,7 @@ public partial class CleanerPageViewModel : ObservableObject
         {
             try
             {
-                using var process = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-                {
-                    FileName    = "cmd.exe",
-                    ArgumentList = { "/c", line },
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                });
-
-                if (process is not null)
-                    await process.WaitForExitAsync();
+                await ProcessRunner.RunCommandAsync(line);
             }
             catch { /* broken command never crashes the app */ }
         }
