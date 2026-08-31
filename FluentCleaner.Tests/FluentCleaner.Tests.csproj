@@ -7,8 +7,7 @@
     <IsPackable>false</IsPackable>
     <AppxGeneratePriEnabled>false</AppxGeneratePriEnabled>
     <AppxGeneratePrisForPortableLibrariesEnabled>false</AppxGeneratePrisForPortableLibrariesEnabled>
-    <UseSdkBuildToolsPackage>true</UseSdkBuildToolsPackage>
-    <WindowsSDKBuildToolsVersion>10.0.28000.1839</WindowsSDKBuildToolsVersion>
+    <WindowsAppSdkBootstrapInitialize>false</WindowsAppSdkBootstrapInitialize>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,7 +15,6 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
-    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.1839" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
@@ -26,5 +24,9 @@
   <ItemGroup>
     <ProjectReference Include="..\FluentCleaner\FluentCleaner.csproj" />
   </ItemGroup>
+
+  <Target Name="_GetSdkToolsPathsFromSdk" BeforeTargets="_GetSdkToolPaths">
+    <!-- No-op target override to prevent APPX3217 when building tests without full Windows SDK installed -->
+  </Target>
 
 </Project>
