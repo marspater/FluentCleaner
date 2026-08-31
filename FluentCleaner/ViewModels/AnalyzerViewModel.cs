@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System;
 using System.IO;
 using System.Linq;
@@ -182,8 +183,11 @@ public partial class AnalyzerViewModel : ObservableObject
                         tempItems.Add((System.IO.Path.GetFileName(dir), dir, size, true));
                     }
                 }
-                catch (UnauthorizedAccessException) { }
-                catch (DirectoryNotFoundException) { }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"[AnalyzerViewModel] Error enumerating directories in {RootPath}: {ex.Message}");
+                }
 
                 // Enumerate files
                 try
@@ -193,12 +197,23 @@ public partial class AnalyzerViewModel : ObservableObject
                     {
                         token.ThrowIfCancellationRequested();
                         long size = 0;
-                        try { size = new FileInfo(file).Length; } catch { }
+                        try
+                        {
+                            size = new FileInfo(file).Length;
+                        }
+                        catch (OperationCanceledException) { throw; }
+                        catch (Exception ex)
+                        {
+                            Debug.WriteLine($"[AnalyzerViewModel] Error getting size for file {file}: {ex.Message}");
+                        }
                         tempItems.Add((System.IO.Path.GetFileName(file), file, size, false));
                     }
                 }
-                catch (UnauthorizedAccessException) { }
-                catch (DirectoryNotFoundException) { }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"[AnalyzerViewModel] Error enumerating files in {RootPath}: {ex.Message}");
+                }
 
             }, token);
 
@@ -256,9 +271,11 @@ public partial class AnalyzerViewModel : ObservableObject
                 size += CalculateDirectorySize(subDir.FullName, token, progress);
             }
         }
-        catch (UnauthorizedAccessException) { }
-        catch (DirectoryNotFoundException) { }
-        catch (Exception) { }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[AnalyzerViewModel] Error calculating directory size for {path}: {ex.Message}");
+        }
         return size;
     }
 }
