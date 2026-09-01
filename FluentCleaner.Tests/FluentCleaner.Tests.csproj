@@ -5,15 +5,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
-    <UseSdkBuildToolsPackage>true</UseSdkBuildToolsPackage>
-    <AppxPackage>false</AppxPackage>
-    <EnableMsixTooling>false</EnableMsixTooling>
-    <AppxGeneratePriEnabled>false</AppxGeneratePriEnabled>
-    <AppxGeneratePrisForPortableLibrariesEnabled>false</AppxGeneratePrisForPortableLibrariesEnabled>
-    <MrtCoreTasksLoaded>true</MrtCoreTasksLoaded>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.1839" PrivateAssets="all" />
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="xunit" Version="2.9.3" />
