@@ -5,6 +5,11 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+    <AppxPackage>false</AppxPackage>
+    <EnableMsixTooling>false</EnableMsixTooling>
+    <AppxGeneratePriEnabled>false</AppxGeneratePriEnabled>
+    <AppxGeneratePrisForPortableLibrariesEnabled>false</AppxGeneratePrisForPortableLibrariesEnabled>
+    <MrtCoreTasksLoaded>true</MrtCoreTasksLoaded>
   </PropertyGroup>
 
   <ItemGroup>
