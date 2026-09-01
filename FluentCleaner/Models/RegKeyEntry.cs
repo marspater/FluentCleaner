@@ -11,17 +11,20 @@ public class RegKeyEntry
     // Optional. If set, only this named value is deleted rather than the whole key.
     public string? ValueName { get; set; }
 
-    public static RegKeyEntry Parse(string value)
+    public static RegKeyEntry Parse(string value) => Parse(value.AsSpan());
+
+    // High-performance span-based parser to avoid string allocations
+    public static RegKeyEntry Parse(ReadOnlySpan<char> value)
     {
         var idx = value.IndexOf('|');
         if (idx >= 0)
         {
             return new RegKeyEntry
             {
-                KeyPath   = value[..idx].Trim(),
-                ValueName = value[(idx + 1)..].Trim()
+                KeyPath   = value[..idx].Trim().ToString(),
+                ValueName = value[(idx + 1)..].Trim().ToString()
             };
         }
-        return new RegKeyEntry { KeyPath = value.Trim() };
+        return new RegKeyEntry { KeyPath = value.Trim().ToString() };
     }
 }

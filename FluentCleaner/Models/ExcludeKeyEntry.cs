@@ -24,29 +24,40 @@ public class ExcludeKeyEntry
        When null, the entire directory is excluded (PATH-style behaviour). */
     public string? Pattern { get; set; }
 
-    public static ExcludeKeyEntry Parse(string value)
+    public static ExcludeKeyEntry Parse(string value) => Parse(value.AsSpan());
+
+    // High-performance span-based parser to avoid string splitting allocations
+    public static ExcludeKeyEntry Parse(ReadOnlySpan<char> value)
     {
-        var parts = value.Split('|');
-        var entry = new ExcludeKeyEntry();
-
-        if (parts.Length > 0)
+        var p1 = value.IndexOf('|');
+        if (p1 < 0)
         {
-            entry.Type = parts[0].Trim().ToUpperInvariant() switch
-            {
-                "FILE" => ExcludeType.File,
-                "PATH" => ExcludeType.Path,
-                "REG"  => ExcludeType.Reg,
-                _      => ExcludeType.File
-            };
-        }
-        if (parts.Length > 1) entry.Path = parts[1].Trim();
-        if (parts.Length > 2)
-        {
-            var pattern = parts[2].Trim();
-            if (!string.IsNullOrWhiteSpace(pattern))
-                entry.Pattern = pattern;
+            var typeStr = value.Trim();
+            var type = typeStr.Equals("REG", StringComparison.OrdinalIgnoreCase) ? ExcludeType.Reg :
+                       typeStr.Equals("PATH", StringComparison.OrdinalIgnoreCase) ? ExcludeType.Path : ExcludeType.File;
+            return new ExcludeKeyEntry { Type = type };
         }
 
-        return entry;
+        var typeSpan = value[..p1].Trim();
+        var exType = typeSpan.Equals("REG", StringComparison.OrdinalIgnoreCase) ? ExcludeType.Reg :
+                     typeSpan.Equals("PATH", StringComparison.OrdinalIgnoreCase) ? ExcludeType.Path : ExcludeType.File;
+
+        var rem = value[(p1 + 1)..];
+        var p2 = rem.IndexOf('|');
+
+        if (p2 < 0)
+        {
+            return new ExcludeKeyEntry { Type = exType, Path = rem.Trim().ToString() };
+        }
+
+        var pathSpan = rem[..p2].Trim();
+        var patSpan = rem[(p2 + 1)..].Trim();
+
+        return new ExcludeKeyEntry
+        {
+            Type = exType,
+            Path = pathSpan.ToString(),
+            Pattern = patSpan.IsEmpty ? null : patSpan.ToString()
+        };
     }
 }
