@@ -1,0 +1,3 @@
+## 2026-09-01 - WinUI 3 Accessibility for Icon-Only Buttons
+**Learning:** Icon-only buttons in WinUI 3 need explicit `AutomationProperties.Name` for screen readers. When using WinUI localization with `x:Uid`, adding `[Uid].[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name` in `.resw` files cleanly exposes localized accessible names to assistive technologies without hardcoding them in XAML.
+**Action:** When adding or updating icon-only buttons or interactive UI elements in WinUI 3, ensure both `ToolTipService.ToolTip` and `AutomationProperties.Name` resource entries exist in `.resw` files for all supported languages.
