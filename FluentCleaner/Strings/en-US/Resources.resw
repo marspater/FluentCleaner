@@ -21,6 +21,7 @@
   <data name="NavCustom.Content"><value>Custom</value></data>
   <data name="SearchBox.PlaceholderText"><value>Search</value></data>
   <data name="BtnPageActions.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip"><value>Page actions</value></data>
+  <data name="BtnPageActions.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name"><value>Page actions</value></data>
   <!-- Main Window — donation TeachingTip -->
   <data name="DonationBanner.Title"><value>Enjoying FluentCleaner?</value></data>
   <data name="DonationBanner.Subtitle"><value>If this app saves you time, consider supporting its development.</value></data>
@@ -35,12 +36,14 @@
   ============================================================ -->
   <data name="CleanerHint.Text"><value>Winapp2.ini loads automatically at startup.</value></data>
   <data name="BtnCategoryActions.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip"><value>Category actions</value></data>
+  <data name="BtnCategoryActions.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name"><value>Category actions</value></data>
   <data name="MenuSelectAll.Text"><value>Select all</value></data>
   <data name="MenuSelectNone.Text"><value>Select none</value></data>
   <data name="MenuSelectDefaults.Text"><value>Select defaults</value></data>
   <data name="MenuAnalyzeCategory.Text"><value>Analyze category</value></data>
   <data name="MenuCleanCategory.Text"><value>Clean category</value></data>
   <data name="BtnEntryActions.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip"><value>Entry actions</value></data>
+  <data name="BtnEntryActions.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name"><value>Entry actions</value></data>
   <data name="MenuAnalyzeEntry.Text"><value>Analyze</value></data>
   <data name="MenuCleanEntry.Text"><value>Clean</value></data>
   <data name="MenuExplainEntry.Text"><value>Explain with AI</value></data>
@@ -241,6 +244,8 @@
   <data name="CustomTitle.Text"><value>Custom Cleaners</value></data>
   <data name="CustomEmptyHint.Text"><value>No custom cleaners yet.</value></data>
   <data name="CustomEmptyHint2.Text"><value>Create a new cleaner — it will appear here automatically.</value></data>
+  <data name="BtnCustomEntryActions.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip"><value>Custom cleaner actions</value></data>
+  <data name="BtnCustomEntryActions.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name"><value>Custom cleaner actions</value></data>
   <data name="MenuEditEntry.Text"><value>Edit</value></data>
   <data name="MenuDeleteEntry.Text"><value>Delete</value></data>
   <data name="MenuTestEntry.Text"><value>Test in Rule Lab</value></data>
