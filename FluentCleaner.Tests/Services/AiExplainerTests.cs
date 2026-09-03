@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
@@ -26,6 +27,7 @@ namespace FluentCleaner.Tests.Services
 
             // Let's use reflection to replace _http with a mocked one
             var field = typeof(AiExplainer).GetField("_http", BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.NotNull(field);
             var originalHttp = field.GetValue(null);
 
             var handler = new MockHttpMessageHandler();
@@ -37,7 +39,9 @@ namespace FluentCleaner.Tests.Services
 
             // Also need to clear the cache for this test using reflection
             var cacheField = typeof(AiExplainer).GetField("_cache", BindingFlags.Static | BindingFlags.NonPublic);
-            var cache = (System.Collections.Generic.Dictionary<string, string>)cacheField.GetValue(null);
+            Assert.NotNull(cacheField);
+            var cache = (Dictionary<string, string>?)cacheField.GetValue(null);
+            Assert.NotNull(cache);
             cache.Clear();
 
             string result;
