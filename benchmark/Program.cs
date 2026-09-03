@@ -1,54 +1,37 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
+using FluentCleaner.Services;
 
 class Program
 {
-    static async Task Main()
+    static void Main()
     {
-        var CustomDir = "CustomTest";
-        if (!Directory.Exists(CustomDir))
+        if (!File.Exists("Winapp2.ini"))
         {
-            Directory.CreateDirectory(CustomDir);
-            for(int i = 0; i < 10000; i++)
-            {
-                File.WriteAllText(Path.Combine(CustomDir, $"test_{i}.ini"), "");
-            }
+            Console.WriteLine("Winapp2.ini not found.");
+            return;
         }
 
+        var content = File.ReadAllText("Winapp2.ini");
+        var parser = new Winapp2Parser();
+
         // Warmup
-        var filesWarmup = Directory.GetFiles(CustomDir, "*.ini").ToList();
+        for (int i = 0; i < 5; i++)
+        {
+            var warmupEntries = parser.Parse(content);
+        }
 
         var sw = Stopwatch.StartNew();
-        var files = Directory.GetFiles(CustomDir, "*.ini")
-                             .Where(f => !f.EndsWith(".ini.disabled", StringComparison.OrdinalIgnoreCase))
-                             .ToList();
+        int iterations = 100;
+        int count = 0;
+        for (int i = 0; i < iterations; i++)
+        {
+            var entries = parser.Parse(content);
+            count = entries.Count;
+        }
         sw.Stop();
-        Console.WriteLine($"Sync Directory.GetFiles: {sw.ElapsedMilliseconds} ms, ticks: {sw.ElapsedTicks}");
 
-        sw.Restart();
-        var files4 = Directory.EnumerateFiles(CustomDir, "*.ini")
-                             .Where(f => !f.EndsWith(".ini.disabled", StringComparison.OrdinalIgnoreCase))
-                             .ToList();
-        sw.Stop();
-        Console.WriteLine($"Sync Directory.EnumerateFiles: {sw.ElapsedMilliseconds} ms, ticks: {sw.ElapsedTicks}");
-
-        sw.Restart();
-        var files2 = await Task.Run(() => Directory.GetFiles(CustomDir, "*.ini")
-                             .Where(f => !f.EndsWith(".ini.disabled", StringComparison.OrdinalIgnoreCase))
-                             .ToList());
-        sw.Stop();
-        Console.WriteLine($"Async Task.Run with GetFiles: {sw.ElapsedMilliseconds} ms, ticks: {sw.ElapsedTicks}");
-
-        sw.Restart();
-        var files3 = await Task.Run(() => Directory.EnumerateFiles(CustomDir, "*.ini")
-                             .Where(f => !f.EndsWith(".ini.disabled", StringComparison.OrdinalIgnoreCase))
-                             .ToList());
-        sw.Stop();
-        Console.WriteLine($"Async Task.Run with EnumerateFiles: {sw.ElapsedMilliseconds} ms, ticks: {sw.ElapsedTicks}");
-
-        Directory.Delete(CustomDir, true);
+        Console.WriteLine($"Parsed Winapp2.ini {iterations} times in {sw.ElapsedMilliseconds} ms ({sw.ElapsedMilliseconds / (double)iterations:F2} ms/op). Entries parsed: {count}");
     }
 }

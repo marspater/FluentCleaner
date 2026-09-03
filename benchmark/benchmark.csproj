@@ -1,10 +1,26 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <StartupObject>Program</StartupObject>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="../FluentCleaner/Services/Winapp2Parser.cs" Link="Services/Winapp2Parser.cs" />
+    <Compile Include="../FluentCleaner/Models/CleanerEntry.cs" Link="Models/CleanerEntry.cs" />
+    <Compile Include="../FluentCleaner/Models/FileKeyEntry.cs" Link="Models/FileKeyEntry.cs" />
+    <Compile Include="../FluentCleaner/Models/RegKeyEntry.cs" Link="Models/RegKeyEntry.cs" />
+    <Compile Include="../FluentCleaner/Models/ExcludeKeyEntry.cs" Link="Models/ExcludeKeyEntry.cs" />
+    <Compile Include="../FluentCleaner.Tests/Services/Winapp2ParserTests.cs" Link="Winapp2ParserTests.cs" />
+  </ItemGroup>
 
 </Project>

@@ -23,35 +23,47 @@ public class FileKeyEntry
     // Whether to recurse into subdirectories and whether to remove empty dirs afterwards.
     public FileKeyFlag Flag { get; set; } = FileKeyFlag.None;
 
-    public static FileKeyEntry Parse(string value)
+    public static FileKeyEntry Parse(string value) => Parse(value.AsSpan());
+
+    public static FileKeyEntry Parse(ReadOnlySpan<char> value)
     {
-        var parts = value.Split('|');
-        var entry = new FileKeyEntry { Path = parts[0].Trim() };
-
-        // parts[1] can be either a file pattern OR a flag (when no pattern is given)
-        if (parts.Length == 2)
+        int firstPipe = value.IndexOf('|');
+        if (firstPipe < 0)
         {
-            var p = parts[1].Trim();
-            if (p.Equals("RECURSE", StringComparison.OrdinalIgnoreCase) ||
-                p.Equals("REMOVESELF", StringComparison.OrdinalIgnoreCase))
-                entry.Flag = p.Equals("RECURSE", StringComparison.OrdinalIgnoreCase) ? FileKeyFlag.Recurse : FileKeyFlag.RemoveSelf;
-            else if (!string.IsNullOrWhiteSpace(p))
-                entry.Pattern = p;
-        }
-        else if (parts.Length > 2)
-        {
-            var pattern = parts[1].Trim();
-            if (!string.IsNullOrWhiteSpace(pattern))
-                entry.Pattern = pattern;
-
-            entry.Flag = parts[2].Trim().ToUpperInvariant() switch
-            {
-                "RECURSE"    => FileKeyFlag.Recurse,
-                "REMOVESELF" => FileKeyFlag.RemoveSelf,
-                _            => FileKeyFlag.None
-            };
+            return new FileKeyEntry { Path = value.Trim().ToString() };
         }
 
-        return entry;
+        var pathSpan = value[..firstPipe].Trim();
+        var rest = value[(firstPipe + 1)..];
+
+        int secondPipe = rest.IndexOf('|');
+        if (secondPipe < 0)
+        {
+            var p = rest.Trim();
+            if (p.Equals("RECURSE", StringComparison.OrdinalIgnoreCase))
+                return new FileKeyEntry { Path = pathSpan.ToString(), Flag = FileKeyFlag.Recurse };
+            if (p.Equals("REMOVESELF", StringComparison.OrdinalIgnoreCase))
+                return new FileKeyEntry { Path = pathSpan.ToString(), Flag = FileKeyFlag.RemoveSelf };
+
+            var pattern = p.IsEmpty ? "*.*" : p.ToString();
+            return new FileKeyEntry { Path = pathSpan.ToString(), Pattern = pattern };
+        }
+        else
+        {
+            var patternSpan = rest[..secondPipe].Trim();
+            var flagSpan = rest[(secondPipe + 1)..].Trim();
+
+            int thirdPipe = flagSpan.IndexOf('|');
+            if (thirdPipe >= 0) flagSpan = flagSpan[..thirdPipe].Trim();
+
+            var pattern = patternSpan.IsEmpty ? "*.*" : patternSpan.ToString();
+            FileKeyFlag flag = FileKeyFlag.None;
+            if (flagSpan.Equals("RECURSE", StringComparison.OrdinalIgnoreCase))
+                flag = FileKeyFlag.Recurse;
+            else if (flagSpan.Equals("REMOVESELF", StringComparison.OrdinalIgnoreCase))
+                flag = FileKeyFlag.RemoveSelf;
+
+            return new FileKeyEntry { Path = pathSpan.ToString(), Pattern = pattern, Flag = flag };
+        }
     }
 }

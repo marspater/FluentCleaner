@@ -8,65 +8,169 @@ namespace FluentCleaner.Services;
 // FileKey1=..., FileKey2=..., Detect, Detect1, Detect2, etc.
 public class Winapp2Parser
 {
-    private static readonly Regex RxFileKey    = new(@"^FileKey\d+$",    RegexOptions.IgnoreCase | RegexOptions.Compiled); // FileKey1, FileKey2 ...; number required
-    private static readonly Regex RxRegKey     = new(@"^RegKey\d+$",     RegexOptions.IgnoreCase | RegexOptions.Compiled); // RegKey1, RegKey2 ...
-    private static readonly Regex RxExcludeKey = new(@"^ExcludeKey\d+$", RegexOptions.IgnoreCase | RegexOptions.Compiled); // ExcludeKey1, ExcludeKey2 ...
-    private static readonly Regex RxDetect     = new(@"^Detect\d*$",     RegexOptions.IgnoreCase | RegexOptions.Compiled); // Detect or Detect1; number optional
-    private static readonly Regex RxDetectFile = new(@"^DetectFile\d*$", RegexOptions.IgnoreCase | RegexOptions.Compiled); // DetectFile or DetectFile1; number optional
-
     public List<CleanerEntry> Parse(string content)
     {
         var entries = new List<CleanerEntry>();
         CleanerEntry? current = null;
 
-        //Split on both \r and \n;WinUI 3 TextBox saves with \r only (not \r\n),
-        //so splitting on just \n would leave the entire file as a single line
-        foreach (var rawLine in content.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
+        // Use ReadOnlySpan line enumeration to avoid allocating string[] or Regex for the whole file
+        var span = content.AsSpan();
+        while (span.Length > 0)
         {
-            var line = rawLine.Trim();
-            if (line.Length == 0 || line[0] == ';' || line[0] == '#') continue;
+            int lineEnd = span.IndexOfAny('\r', '\n');
+            ReadOnlySpan<char> lineSpan;
+            if (lineEnd >= 0)
+            {
+                lineSpan = span[..lineEnd];
+                span = span[(lineEnd + 1)..];
+                if (span.Length > 0 && lineSpan.Length > 0 && lineSpan[^1] == '\r' && span[0] == '\n')
+                {
+                    // Skip \n in \r\n
+                }
+            }
+            else
+            {
+                lineSpan = span;
+                span = ReadOnlySpan<char>.Empty;
+            }
 
-            if (line.StartsWith('[') && line.EndsWith(']'))
+            lineSpan = lineSpan.Trim();
+            if (lineSpan.IsEmpty || lineSpan[0] == ';' || lineSpan[0] == '#') continue;
+
+            if (lineSpan[0] == '[' && lineSpan[^1] == ']')
             {
                 if (current is not null && IsValid(current)) entries.Add(current);
 
-                var name = line[1..^1].Trim();
-                //Skip the files own header block
-                if (name.StartsWith("Winapp2", StringComparison.OrdinalIgnoreCase) ||
-                    name.StartsWith("version",  StringComparison.OrdinalIgnoreCase))
+                var nameSpan = lineSpan[1..^1].Trim();
+                // Skip the file's own header block
+                if (nameSpan.StartsWith("Winapp2", StringComparison.OrdinalIgnoreCase) ||
+                    nameSpan.StartsWith("version",  StringComparison.OrdinalIgnoreCase))
                 {
                     current = null;
                     continue;
                 }
 
-                //Strip the trailing " *" Winapp2 uses to mark community entries
-                current = new CleanerEntry { Name = name.TrimEnd('*').TrimEnd() };
+                // Strip the trailing " *" Winapp2 uses to mark community entries
+                var nameStr = nameSpan.ToString().TrimEnd('*').TrimEnd();
+                current = new CleanerEntry { Name = nameStr };
                 continue;
             }
 
             if (current is null) continue;
 
-            var eqIdx = line.IndexOf('=');
+            var eqIdx = lineSpan.IndexOf('=');
             if (eqIdx < 0) continue;
 
-            var key   = line[..eqIdx].Trim();
-            var value = line[(eqIdx + 1)..].Trim();
-            if (value.Length == 0) continue;
+            var keySpan   = lineSpan[..eqIdx].Trim();
+            var valueSpan = lineSpan[(eqIdx + 1)..].Trim();
+            if (valueSpan.IsEmpty) continue;
 
-            if      (key.Equals("LangSecRef",    StringComparison.OrdinalIgnoreCase)) { if (int.TryParse(value, out var n)) current.LangSecRef = n; }
-            else if (key.Equals("Section",       StringComparison.OrdinalIgnoreCase)) current.Section       = value;
-            else if (key.Equals("SpecialDetect", StringComparison.OrdinalIgnoreCase)) current.SpecialDetect = value;
-            else if (key.Equals("Warning",       StringComparison.OrdinalIgnoreCase)) current.Warning       = value;
-            else if (key.Equals("Default",       StringComparison.OrdinalIgnoreCase)) current.Default       = value.Equals("True", StringComparison.OrdinalIgnoreCase);
-            else if (RxDetect.IsMatch(key))     current.DetectKeys.Add(value);
-            else if (RxDetectFile.IsMatch(key)) current.DetectFiles.Add(value);
-            else if (RxFileKey.IsMatch(key))    current.FileKeys.Add(FileKeyEntry.Parse(value));
-            else if (RxRegKey.IsMatch(key))     current.RegKeys.Add(RegKeyEntry.Parse(value));
-            else if (RxExcludeKey.IsMatch(key)) current.ExcludeKeys.Add(ExcludeKeyEntry.Parse(value));
+            if (keySpan.Equals("LangSecRef", StringComparison.OrdinalIgnoreCase))
+            {
+                if (int.TryParse(valueSpan, out var n)) current.LangSecRef = n;
+            }
+            else if (keySpan.Equals("Section", StringComparison.OrdinalIgnoreCase))
+            {
+                current.Section = valueSpan.ToString();
+            }
+            else if (keySpan.Equals("SpecialDetect", StringComparison.OrdinalIgnoreCase))
+            {
+                current.SpecialDetect = valueSpan.ToString();
+            }
+            else if (keySpan.Equals("Warning", StringComparison.OrdinalIgnoreCase))
+            {
+                current.Warning = valueSpan.ToString();
+            }
+            else if (keySpan.Equals("Default", StringComparison.OrdinalIgnoreCase))
+            {
+                current.Default = valueSpan.Equals("True", StringComparison.OrdinalIgnoreCase);
+            }
+            else if (IsDetectFileKey(keySpan))
+            {
+                current.DetectFiles.Add(valueSpan.ToString());
+            }
+            else if (IsDetectKey(keySpan))
+            {
+                current.DetectKeys.Add(valueSpan.ToString());
+            }
+            else if (IsFileKey(keySpan))
+            {
+                current.FileKeys.Add(FileKeyEntry.Parse(valueSpan));
+            }
+            else if (IsRegKey(keySpan))
+            {
+                current.RegKeys.Add(RegKeyEntry.Parse(valueSpan));
+            }
+            else if (IsExcludeKey(keySpan))
+            {
+                current.ExcludeKeys.Add(ExcludeKeyEntry.Parse(valueSpan));
+            }
         }
 
         if (current is not null && IsValid(current)) entries.Add(current);
         return entries;
+    }
+
+    private static bool IsDetectFileKey(ReadOnlySpan<char> key)
+    {
+        // Matches ^DetectFile\d*$
+        if (key.StartsWith("DetectFile", StringComparison.OrdinalIgnoreCase))
+        {
+            return IsAllDigits(key[10..]);
+        }
+        return false;
+    }
+
+    private static bool IsDetectKey(ReadOnlySpan<char> key)
+    {
+        // Matches ^Detect\d*$"
+        if (key.StartsWith("Detect", StringComparison.OrdinalIgnoreCase))
+        {
+            return IsAllDigits(key[6..]);
+        }
+        return false;
+    }
+
+    private static bool IsFileKey(ReadOnlySpan<char> key)
+    {
+        // Matches ^FileKey\d+$ (at least 1 digit required)
+        if (key.Length > 7 && key.StartsWith("FileKey", StringComparison.OrdinalIgnoreCase))
+        {
+            var digits = key[7..];
+            return !digits.IsEmpty && IsAllDigits(digits);
+        }
+        return false;
+    }
+
+    private static bool IsRegKey(ReadOnlySpan<char> key)
+    {
+        // Matches ^RegKey\d+$ (at least 1 digit required)
+        if (key.Length > 6 && key.StartsWith("RegKey", StringComparison.OrdinalIgnoreCase))
+        {
+            var digits = key[6..];
+            return !digits.IsEmpty && IsAllDigits(digits);
+        }
+        return false;
+    }
+
+    private static bool IsExcludeKey(ReadOnlySpan<char> key)
+    {
+        // Matches ^ExcludeKey\d+$ (at least 1 digit required)
+        if (key.Length > 10 && key.StartsWith("ExcludeKey", StringComparison.OrdinalIgnoreCase))
+        {
+            var digits = key[10..];
+            return !digits.IsEmpty && IsAllDigits(digits);
+        }
+        return false;
+    }
+
+    private static bool IsAllDigits(ReadOnlySpan<char> span)
+    {
+        foreach (char c in span)
+        {
+            if (c < '0' || c > '9') return false;
+        }
+        return true;
     }
 
     // An entry is only useful if it can be detected AND has something to clean
