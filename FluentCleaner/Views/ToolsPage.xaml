@@ -78,6 +78,7 @@
                             <Button HorizontalAlignment="Right"
                                     VerticalAlignment="Center"
                                     ToolTipService.ToolTip="Open Extensions folder"
+                                    AutomationProperties.Name="Open Extensions folder"
                                     Click="btnOpenFolder_Click"
                                     Padding="6">
                                 <Button.Resources>
@@ -158,7 +159,8 @@
                             <!-- more-options flyout (...) -->
                             <Button HorizontalAlignment="Right" VerticalAlignment="Center"
                                     Width="32" Height="32" Padding="0"
-                                    ToolTipService.ToolTip="More options">
+                                    ToolTipService.ToolTip="More options"
+                                    AutomationProperties.Name="More options">
                                 <Button.Resources>
                                     <SolidColorBrush x:Key="ButtonBackground"            Color="Transparent" />
                                     <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="{ThemeResource SubtleFillColorSecondary}" />

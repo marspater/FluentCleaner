@@ -40,13 +40,13 @@
 
                     <!-- Compact search icon -->
                     <Button x:Name="SearchIconButton"
+                        x:Uid="SearchIconButton"
                         Width="32"
                         Height="32"
                         Padding="0"
                         Visibility="Collapsed"
                         Background="Transparent"
-                        BorderThickness="0"
-                        ToolTipService.ToolTip="Search">
+                        BorderThickness="0">
 
                         <FontIcon Glyph="&#xE721;"
                             FontSize="15" />
