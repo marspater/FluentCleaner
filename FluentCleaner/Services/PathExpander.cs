@@ -5,7 +5,9 @@ namespace FluentCleaner.Services;
 2. Walk directory trees where path segments contain * wildcards */
 public class PathExpander
 {
-    private readonly Dictionary<string, string> _vars = BuildVarMap();
+    // Shared environment variable dictionary to avoid reallocating on every instance creation.
+    private static readonly Dictionary<string, string> _vars = BuildVarMap();
+    private static readonly char[] WildcardChars = new[] { '*', '?' };
 
     private static Dictionary<string, string> BuildVarMap()
     {
@@ -44,11 +46,15 @@ public class PathExpander
 
     public string ExpandVariables(string path)
     {
-        foreach (var (token, value) in _vars)
-            path = path.Replace(token, value, StringComparison.OrdinalIgnoreCase);
+        // Performance optimization: skip variable replacement loops if there are no '%' characters in path.
+        if (path.IndexOf('%') >= 0)
+        {
+            foreach (var (token, value) in _vars)
+                path = path.Replace(token, value, StringComparison.OrdinalIgnoreCase);
 
-        // Let the OS handle any remaining %VAR% tokens we don't know about
-        path = Environment.ExpandEnvironmentVariables(path);
+            // Let the OS handle any remaining %VAR% tokens we don't know about
+            path = Environment.ExpandEnvironmentVariables(path);
+        }
 
         // %SystemDrive% (and any other bare drive reference) expands to "C:" without a
         // trailing backslash because BuildVarMap strips it to avoid double-backslashes in
@@ -87,6 +93,14 @@ public class PathExpander
 
     private static void ResolveRecursive(string path, HashSet<string> results)
     {
+        // Performance optimization: check if path contains wildcards before splitting strings.
+        if (path.IndexOfAny(WildcardChars) < 0)
+        {
+            // No wildcard, so this is a literal path, add as-is
+            results.Add(path);
+            return;
+        }
+
         var parts = path.Split(new[] { '\\', '/' }, StringSplitOptions.None);
 
         // Find the first segment that contains a wildcard
