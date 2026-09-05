@@ -14,7 +14,7 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <!-- Native TitleBar:icon + title left, search center, [...] right -->
+        <!-- Native TitleBar: icon + title left, search center, [...] right -->
         <TitleBar x:Name="AppTitleBar"
                   Grid.Row="0"
                   Title="FluentCleaner"
@@ -24,7 +24,6 @@
             <TitleBar.IconSource>
                 <ImageIconSource ImageSource="Assets/AppIcon.ico" />
             </TitleBar.IconSource>
-
 
             <TitleBar.Content>
                 <Grid>
@@ -40,16 +39,15 @@
 
                     <!-- Compact search icon -->
                     <Button x:Name="SearchIconButton"
+                        x:Uid="SearchIconButton"
                         Width="32"
                         Height="32"
                         Padding="0"
                         Visibility="Collapsed"
                         Background="Transparent"
-                        BorderThickness="0"
-                        ToolTipService.ToolTip="Search">
+                        BorderThickness="0">
 
-                        <FontIcon Glyph="&#xE721;"
-                            FontSize="15" />
+                        <FontIcon Glyph="&#xE721;" FontSize="15" />
                         <Button.Flyout>
                             <Flyout Placement="Bottom">
                                 <AutoSuggestBox Width="280"
@@ -80,7 +78,7 @@
             </TitleBar.RightHeader>
         </TitleBar>
 
-        <!-- NavView sits below TitleBar; IsTitleBarAutoPaddingEnabled=False avoids double padding -->
+        <!-- NavView sits below TitleBar -->
         <NavigationView x:Name="NavView"
                         Grid.Row="1"
                         PaneDisplayMode="LeftCompact"
@@ -92,17 +90,32 @@
                         SelectionChanged="NavView_SelectionChanged">
 
             <NavigationView.MenuItems>
-                <NavigationViewItem x:Uid="NavCleaner" Tag="Cleaner" IsSelected="True">
+                <NavigationViewItem x:Uid="NavCleaner" Content="Cleaner" Tag="Cleaner">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xEA99;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItem x:Uid="NavTerminal" Tag="Terminal">
+                <NavigationViewItem x:Uid="NavTools" Content="Tools" Tag="Tools">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE74C;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem x:Uid="NavAnalyzer" Content="Analyzer" Tag="Analyzer">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE8B8;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem x:Uid="NavDeveloper" Content="Developer Cleanup" Tag="Developer">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xEBE8;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem x:Uid="NavTerminal" Content="Terminal" Tag="Terminal">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xE943;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItem x:Uid="NavCustom" Tag="Custom">
+                <NavigationViewItem x:Uid="NavCustom" Content="Custom" Tag="Custom">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xE710;" />
                     </NavigationViewItem.Icon>
