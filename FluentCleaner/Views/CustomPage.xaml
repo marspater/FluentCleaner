@@ -66,7 +66,7 @@
                                     <TextBlock Text="{x:Bind Name}"
                                                FontSize="13" FontWeight="SemiBold"
                                                VerticalAlignment="Center" />
-                                    <Button HorizontalAlignment="Right" Padding="6">
+                                    <Button x:Uid="BtnCustomEntryActions" HorizontalAlignment="Right" Padding="6">
                                         <Button.Resources>
                                             <SolidColorBrush x:Key="ButtonBackground"            Color="Transparent" />
                                             <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="{ThemeResource SubtleFillColorSecondary}" />
