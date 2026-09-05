@@ -36,9 +36,11 @@ public partial class CleanerPageViewModel : ObservableObject
     public string ProgressLabel => $"{ScanProgress:0}%";                                                                   // text next to progress bar
 
     // Derived; no own state, everything computed from the observable properties above
-    public bool   IsEmpty       => Categories.Count == 0;                          // left panel is empty (nothing loaded yet)
-    public bool   IsNotEmpty    => Categories.Count > 0;                           // left panel has content
-    public bool   HasSearchText => !string.IsNullOrWhiteSpace(SearchText);         // search box is filled
+    public bool   IsEmpty        => Categories.Count == 0;                          // left panel is empty (nothing loaded yet)
+    public bool   IsNotEmpty     => Categories.Count > 0;                           // left panel has content
+    public bool   IsLoading      => IsBusy && Categories.Count == 0;                // actively loading database on startup/refresh
+    public bool   IsEmptyAndIdle => !IsBusy && Categories.Count == 0;               // idle and no entries found
+    public bool   HasSearchText  => !string.IsNullOrWhiteSpace(SearchText);         // search box is filled
     public bool   IsShowingDetail  => SelectedResultLine is not null;              // right panel: detail view showing file paths for one entry
     public bool   IsShowingList    => SelectedResultLine is null;                  // right panel: normal results list after Analyze
     public string SelectedAppName  => SelectedResultLine?.AppName ?? "";           // name of the open entry shown in the detail header
@@ -78,6 +80,8 @@ public partial class CleanerPageViewModel : ObservableObject
         RefreshCommand.NotifyCanExecuteChanged();
         OnPropertyChanged(nameof(CanRunCleaner));
         OnPropertyChanged(nameof(IsNotBusy));   // flips the Analyze<>Cancel button pair in the XAML
+        OnPropertyChanged(nameof(IsLoading));
+        OnPropertyChanged(nameof(IsEmptyAndIdle));
     }
 
     // --- Commands -----------------------------------------------------------
@@ -290,16 +294,7 @@ public partial class CleanerPageViewModel : ObservableObject
         {
             try
             {
-                using var process = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-                {
-                    FileName    = "cmd.exe",
-                    ArgumentList = { "/c", line },
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                });
-
-                if (process is not null)
-                    await process.WaitForExitAsync();
+                await ProcessRunner.RunCommandAsync(line);
             }
             catch { /* broken command never crashes the app */ }
         }
@@ -353,7 +348,7 @@ public partial class CleanerPageViewModel : ObservableObject
 
         try
         {
-            var result = await EnsureEntryScanAsync(entryVm, new Progress<string>(msg => StatusText = msg));
+            var result = await EnsureEntryScanAsync(entryVm, new Progress<string>(msg => StatusText = msg), cts.Token);
 
             if (result.FilesToDelete.Count == 0 && result.RegistryToDelete.Count == 0)
             {
@@ -429,16 +424,31 @@ public partial class CleanerPageViewModel : ObservableObject
         StatusText         = ResourceService.Fmt("St_CategoryCleaning", categoryVm.Name);
         var progress       = new Progress<string>(msg => StatusText = msg);
 
-        var selected = categoryVm.Entries.Where(e => e.IsSelected).ToList();
-        foreach (var vm in selected.Where(vm => !_lastScan.Any(r => r.Entry == vm.Entry)))
-            await AnalyzeEntryInternalAsync(vm.Entry, progress, keepDetailSelection: false);
+        using var cts = new CancellationTokenSource();
+        _cts = cts;
 
-        var results               = _lastScan.Where(r => selected.Any(vm => vm.Entry == r.Entry)).ToList();
-        var (removed, freedBytes) = await CleanResultsAsync(results, progress);
+        try
+        {
+            var selected = categoryVm.Entries.Where(e => e.IsSelected).ToList();
+            foreach (var vm in selected.Where(vm => !_lastScan.Any(r => r.Entry == vm.Entry)))
+                await AnalyzeEntryInternalAsync(vm.Entry, progress, keepDetailSelection: false, cts.Token);
 
-        UpdateTotalsFromLastScan();
-        StatusText = ResourceService.Fmt("St_CategoryCleanDone", categoryVm.Name, removed, ScanResult.FormatBytes(freedBytes));
-        IsBusy     = false;
+            var results               = _lastScan.Where(r => selected.Any(vm => vm.Entry == r.Entry)).ToList();
+            var (removed, freedBytes) = await CleanResultsAsync(results, progress, cts.Token);
+
+            UpdateTotalsFromLastScan();
+            StatusText = ResourceService.Fmt("St_CategoryCleanDone", categoryVm.Name, removed, ScanResult.FormatBytes(freedBytes));
+        }
+        catch (OperationCanceledException)
+        {
+            UpdateTotalsFromLastScan();
+            StatusText = ResourceService.Get("St_CleanCancelled");
+        }
+        finally
+        {
+            _cts   = null;
+            IsBusy = false;
+        }
     }
 
     // --- Warnings -----------------------------------------------------------
@@ -534,6 +544,8 @@ public partial class CleanerPageViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(IsEmpty));
         OnPropertyChanged(nameof(IsNotEmpty));
+        OnPropertyChanged(nameof(IsLoading));
+        OnPropertyChanged(nameof(IsEmptyAndIdle));
         OnPropertyChanged(nameof(HasSearchText));
         OnPropertyChanged(nameof(CanRunCleaner));
         AnalyzeCommand.NotifyCanExecuteChanged();
@@ -588,13 +600,13 @@ public partial class CleanerPageViewModel : ObservableObject
 
     // "Clean" without prior "Analyze"; scans on the fly before deleting.
     // Already have a result? Use it directly.
-    private async Task<ScanResult> EnsureEntryScanAsync(CleanerEntryViewModel entryVm, IProgress<string> progress)
+    private async Task<ScanResult> EnsureEntryScanAsync(CleanerEntryViewModel entryVm, IProgress<string> progress, CancellationToken token = default)
     {
         var existing = _lastScan.FirstOrDefault(r => r.Entry == entryVm.Entry);
         if (existing is not null) return existing;
 
         StatusText = ResourceService.Fmt("St_EntryScanningProgress", entryVm.Name);
-        return await AnalyzeEntryInternalAsync(entryVm.Entry, progress, keepDetailSelection: false);
+        return await AnalyzeEntryInternalAsync(entryVm.Entry, progress, keepDetailSelection: false, token);
     }
 
     // Shared clean loop; used by single-entry, category, and full RunCleaner flows.
@@ -704,11 +716,18 @@ public partial class CleanerPageViewModel : ObservableObject
     private void SaveSelection()
     {
         if (_suppressSave) return;
-        AppSettings.Instance.SelectedEntries = Categories
-            .SelectMany(c => c.Entries)
-            .Where(e => e.IsSelected)
-            .Select(e => e.Name)
-            .ToHashSet();
+
+        var selected = AppSettings.Instance.SelectedEntries.Count > 0
+            ? AppSettings.Instance.SelectedEntries.ToHashSet(StringComparer.OrdinalIgnoreCase)
+            : _loadedEntries.Where(e => e.Default).Select(e => e.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var entry in FlatEntries)
+        {
+            if (entry.IsSelected) selected.Add(entry.Name);
+            else                  selected.Remove(entry.Name);
+        }
+
+        AppSettings.Instance.SelectedEntries = selected;
         AppSettings.Instance.Save();
     }
 
