@@ -9,7 +9,7 @@
     <EnableMsixTooling>false</EnableMsixTooling>
     <AppxGeneratePriEnabled>false</AppxGeneratePriEnabled>
     <AppxGeneratePrisForPortableLibrariesEnabled>false</AppxGeneratePrisForPortableLibrariesEnabled>
-    <MrtCoreTasksLoaded>true</MrtCoreTasksLoaded>
+    <SDKIdentifier></SDKIdentifier>
   </PropertyGroup>
 
   <ItemGroup>
