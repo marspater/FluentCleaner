@@ -91,7 +91,10 @@ public partial class AnalyzerViewModel : ObservableObject
                 RootPath = LocalDrives[0];
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[AnalyzerViewModel] Failed to load drives: {ex.Message}");
+        }
     }
 
     partial void OnIsBusyChanged(bool value)
@@ -126,8 +129,9 @@ public partial class AnalyzerViewModel : ObservableObject
                 DriveInfoText = "";
             }
         }
-        catch
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"[AnalyzerViewModel] Failed to update drive info for '{RootPath}': {ex.Message}");
             TotalDriveSize = 0;
             DriveInfoText = "";
         }
@@ -182,8 +186,14 @@ public partial class AnalyzerViewModel : ObservableObject
                         tempItems.Add((System.IO.Path.GetFileName(dir), dir, size, true));
                     }
                 }
-                catch (UnauthorizedAccessException) { }
-                catch (DirectoryNotFoundException) { }
+                catch (UnauthorizedAccessException ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[AnalyzerViewModel] Unauthorized access enumerating directories in '{RootPath}': {ex.Message}");
+                }
+                catch (DirectoryNotFoundException ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[AnalyzerViewModel] Directory not found enumerating directories in '{RootPath}': {ex.Message}");
+                }
 
                 // Enumerate files
                 try
@@ -204,8 +214,14 @@ public partial class AnalyzerViewModel : ObservableObject
                         tempItems.Add((System.IO.Path.GetFileName(file), file, size, false));
                     }
                 }
-                catch (UnauthorizedAccessException) { }
-                catch (DirectoryNotFoundException) { }
+                catch (UnauthorizedAccessException ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[AnalyzerViewModel] Unauthorized access enumerating files in '{RootPath}': {ex.Message}");
+                }
+                catch (DirectoryNotFoundException ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[AnalyzerViewModel] Directory not found enumerating files in '{RootPath}': {ex.Message}");
+                }
 
             }, token);
 
@@ -263,9 +279,18 @@ public partial class AnalyzerViewModel : ObservableObject
                 size += CalculateDirectorySize(subDir.FullName, token, progress);
             }
         }
-        catch (UnauthorizedAccessException) { }
-        catch (DirectoryNotFoundException) { }
-        catch (Exception) { }
+        catch (UnauthorizedAccessException ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[AnalyzerViewModel] Unauthorized access calculating directory size for '{path}': {ex.Message}");
+        }
+        catch (DirectoryNotFoundException ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[AnalyzerViewModel] Directory not found calculating directory size for '{path}': {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[AnalyzerViewModel] Failed calculating directory size for '{path}': {ex.Message}");
+        }
         return size;
     }
 }

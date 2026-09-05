@@ -13,7 +13,7 @@ namespace FluentCleaner.Services;
    Cached in-memory so reopening the same entry is instant. */
 public static class AiExplainer
 {
-    private static HttpClient _http = new();
+    private static readonly HttpClient _http = new();
     private static readonly Dictionary<string, string> _cache = new(StringComparer.OrdinalIgnoreCase);
 
     public static async Task<string> ExplainAsync(CleanerEntry entry)
