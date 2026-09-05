@@ -27,7 +27,7 @@ public partial class SettingsPageViewModel : ObservableObject
 
     // Database toggles
     [ObservableProperty] public partial bool   EnableWinapp2 { get; set; } = true;
-    [ObservableProperty] public partial bool   EnableWinapp3 { get; set; }
+    [ObservableProperty] public partial bool   EnableWinapp3 { get; set; };
     [ObservableProperty] public partial bool   EnableWinappx { get; set; } = true;
     [ObservableProperty] public partial bool   Winapp3Available { get; set; }    // Winapp3.ini exists on disk
     [ObservableProperty] public partial bool   Winapp3NotAvailable { get; set; } // inverse; drives the Download button
@@ -44,11 +44,11 @@ public partial class SettingsPageViewModel : ObservableObject
     [ObservableProperty] public partial string CustomPath { get; set; } = "";
 
     // Post-clean tasks
-    [ObservableProperty] public partial bool   PostCleanEnabled  { get; set; }
+    [ObservableProperty] public partial bool   PostCleanEnabled  { get; set; };
     [ObservableProperty] public partial string PostCleanCommands { get; set; } = "";
 
     // Global exclusions;paths that are never cleaned, no matter what the INI says
-    [ObservableProperty] public partial bool   GlobalExclusionsEnabled { get; set; }
+    [ObservableProperty] public partial bool   GlobalExclusionsEnabled { get; set; };
     [ObservableProperty] public partial string GlobalExclusionsText    { get; set; } = "";
 
     // History
@@ -59,12 +59,12 @@ public partial class SettingsPageViewModel : ObservableObject
     // Shared
     [ObservableProperty] public partial string StatusText { get; set; } = "";
     [ObservableProperty] public partial bool   IsBusy { get; set; }             // single ring for all downloads
-    [ObservableProperty] public partial int    ThemeIndex    { get; set; }
-    [ObservableProperty] public partial bool   RestartRequired { get; set; }
+    [ObservableProperty] public partial int    ThemeIndex    { get; set; };
+    [ObservableProperty] public partial bool   RestartRequired { get; set; };
 
     // Language dropdown — populated at runtime from the deployed Strings\{lang}\ folders.
     public ObservableCollection<LanguageOption> Languages { get; } = [];
-    [ObservableProperty] public partial LanguageOption? SelectedLanguage { get; set; }
+    [ObservableProperty] public partial LanguageOption? SelectedLanguage { get; set; };
     [ObservableProperty] public partial bool   IsPortable { get; set; }         // true when settings.json sits next to exe
 
     private bool _refreshing;
@@ -349,11 +349,21 @@ public partial class SettingsPageViewModel : ObservableObject
     {
         IsBusy = true;
         StatusText = ResourceService.Fmt("St_Downloading", label);
+        var tempFile = destination + ".tmp";
         try
         {
             using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
             var content = await http.GetStringAsync(url);
-            await File.WriteAllTextAsync(destination, content);
+            if (string.IsNullOrWhiteSpace(content))
+                throw new InvalidOperationException("Downloaded content is empty.");
+
+            var dir = Path.GetDirectoryName(destination);
+            if (!string.IsNullOrEmpty(dir))
+                Directory.CreateDirectory(dir);
+
+            await File.WriteAllTextAsync(tempFile, content);
+            File.Move(tempFile, destination, overwrite: true);
+
             StatusText      = ResourceService.Fmt("St_Downloaded", label, content.Length / 1024);
             RestartRequired = true;
             return true;
@@ -361,6 +371,7 @@ public partial class SettingsPageViewModel : ObservableObject
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"[DownloadFileAsync] Failed to download {label}: {ex}");
+            try { if (File.Exists(tempFile)) File.Delete(tempFile); } catch { }
             StatusText = ResourceService.Fmt("St_DownloadFailed", ex.Message);
             return false;
         }
@@ -371,9 +382,22 @@ public partial class SettingsPageViewModel : ObservableObject
 
     private void RefreshFileInfo()
     {
-        Winapp2Info = BuildFileInfo(Winapp2LocalPath);
-        Winapp3Info = BuildFileInfo(Winapp3LocalPath);
-        WinappxInfo = BuildFileInfo(WinappxLocalPath);
+        _ = RefreshFileInfoAsync();
+    }
+
+    private async Task RefreshFileInfoAsync()
+    {
+        var winapp2Path = Winapp2LocalPath;
+        var winapp3Path = Winapp3LocalPath;
+        var winappxPath = WinappxLocalPath;
+
+        var winapp2Task = Task.Run(() => BuildFileInfo(winapp2Path));
+        var winapp3Task = Task.Run(() => BuildFileInfo(winapp3Path));
+        var winappxTask = Task.Run(() => BuildFileInfo(winappxPath));
+
+        Winapp2Info = await winapp2Task;
+        Winapp3Info = await winapp3Task;
+        WinappxInfo = await winappxTask;
     }
 
     private static string BuildFileInfo(string path)
