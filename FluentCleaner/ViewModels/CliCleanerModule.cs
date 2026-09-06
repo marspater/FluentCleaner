@@ -72,22 +72,32 @@ public class CliCleanerModule
         if (entries.Count == 0) { output.Add(ResourceService.Fmt("CLI_NoMatch", name)); return; }
 
         setBusy(true);
-        int totalCount = 0; long totalBytes = 0;
-
-        foreach (var entry in entries)
+        try
         {
-            var result = await _cleaner.AnalyzeAsync(entry);
-            if (result.FilesToDelete.Count == 0 && result.RegistryToDelete.Count == 0) continue;
-            var (count, bytes) = await _cleaner.CleanAsync(result);
-            totalCount += count;
-            totalBytes += bytes;
-            output.Add(ResourceService.Fmt("CLI_CleanEntry", entry.Name, count, ScanResult.FormatBytes(bytes)));
-        }
+            int totalCount = 0; long totalBytes = 0;
 
-        output.Add(totalCount > 0
-            ? ResourceService.Fmt("CLI_CleanDone", totalCount, ScanResult.FormatBytes(totalBytes))
-            : ResourceService.Get("CLI_NothingToClean"));
-        setBusy(false);
+            foreach (var entry in entries)
+            {
+                var result = await _cleaner.AnalyzeAsync(entry);
+                if (result.FilesToDelete.Count == 0 && result.RegistryToDelete.Count == 0) continue;
+                var (count, bytes) = await _cleaner.CleanAsync(result);
+                totalCount += count;
+                totalBytes += bytes;
+                output.Add(ResourceService.Fmt("CLI_CleanEntry", entry.Name, count, ScanResult.FormatBytes(bytes)));
+            }
+
+            output.Add(totalCount > 0
+                ? ResourceService.Fmt("CLI_CleanDone", totalCount, ScanResult.FormatBytes(totalBytes))
+                : ResourceService.Get("CLI_NothingToClean"));
+        }
+        catch (Exception ex)
+        {
+            output.Add($"  Error during clean: {ex.Message}");
+        }
+        finally
+        {
+            setBusy(false);
+        }
     }
 
     // Scans only, nothing gets deleted;single entry, whole category, or everything
@@ -97,20 +107,30 @@ public class CliCleanerModule
         if (entries.Count == 0) { output.Add(ResourceService.Fmt("CLI_NoMatch", name)); return; }
 
         setBusy(true);
-        long totalBytes = 0;
-
-        foreach (var entry in entries)
+        try
         {
-            var result = await _cleaner.AnalyzeAsync(entry);
-            if (result.FilesToDelete.Count == 0 && result.RegistryToDelete.Count == 0) continue;
-            totalBytes += result.TotalBytes;
-            output.Add(ResourceService.Fmt("CLI_AnalyzeEntry", entry.Name, result.FilesToDelete.Count, result.RegistryToDelete.Count, result.FormattedSize));
-        }
+            long totalBytes = 0;
 
-        output.Add(totalBytes > 0
-            ? ResourceService.Fmt("CLI_AnalyzeTotal", ScanResult.FormatBytes(totalBytes))
-            : ResourceService.Get("CLI_NothingFound"));
-        setBusy(false);
+            foreach (var entry in entries)
+            {
+                var result = await _cleaner.AnalyzeAsync(entry);
+                if (result.FilesToDelete.Count == 0 && result.RegistryToDelete.Count == 0) continue;
+                totalBytes += result.TotalBytes;
+                output.Add(ResourceService.Fmt("CLI_AnalyzeEntry", entry.Name, result.FilesToDelete.Count, result.RegistryToDelete.Count, result.FormattedSize));
+            }
+
+            output.Add(totalBytes > 0
+                ? ResourceService.Fmt("CLI_AnalyzeTotal", ScanResult.FormatBytes(totalBytes))
+                : ResourceService.Get("CLI_NothingFound"));
+        }
+        catch (Exception ex)
+        {
+            output.Add($"  Error during analysis: {ex.Message}");
+        }
+        finally
+        {
+            setBusy(false);
+        }
     }
 
     // Dumps all (or filtered) entry names
@@ -143,7 +163,7 @@ public class CliCleanerModule
         {
             var saved = AppSettings.Instance.SelectedEntries;
             return _entries
-                .Where(e => saved.Count > 0 ? saved.Contains(e.Name) : e.Default)
+                .Where(e => saved is not null ? saved.Contains(e.Name) : e.Default)
                 .ToList();
         }
 

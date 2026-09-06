@@ -27,7 +27,7 @@ public class CustomEntryService
                                       .ToArray());
         foreach (var path in filePaths)
         {
-            foreach (var ce in await _parser.ParseFileAsync(path))
+            foreach (var ce in await _parser.ParseFileAsync(path, requireDetection: false))
             {
                 ce.IsCustom = true;
                 bool hasDetection = ce.DetectFiles.Count > 0 || ce.DetectKeys.Count > 0 || ce.SpecialDetect is not null;

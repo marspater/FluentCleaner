@@ -42,10 +42,11 @@ public static class ProcessRunner
 
         using var process = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
         {
-            FileName        = fileName,
-            Arguments       = arguments,
-            UseShellExecute = false,
-            CreateNoWindow  = true
+            FileName         = fileName,
+            Arguments        = arguments,
+            WorkingDirectory = AppContext.BaseDirectory,
+            UseShellExecute  = false,
+            CreateNoWindow   = true
         });
 
         if (process is not null)

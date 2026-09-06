@@ -7,9 +7,9 @@ namespace FluentCleaner.Services;
 // Called from App.OnLaunched when the flag is detected; writes a detailed log and exits
 public static class SilentRunner
 {
-    private static readonly string LogFile = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "FluentCleaner", "auto.log");
+    private static string LogFile => AppSettings.IsPortable
+        ? Path.Combine(AppContext.BaseDirectory, "auto.log")
+        : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "FluentCleaner", "auto.log");
 
     public static async Task RunAsync(bool shutdown)
     {
@@ -35,7 +35,7 @@ public static class SilentRunner
         var saved    = AppSettings.Instance.SelectedEntries;
         var selected = allEntries
             .Where(detection.IsInstalled)
-            .Where(e => saved.Count > 0 ? saved.Contains(e.Name) : e.Default)
+            .Where(e => saved is not null ? saved.Contains(e.Name) : e.Default)
             .ToList();
 
         var log          = new StringBuilder();

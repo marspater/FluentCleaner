@@ -108,7 +108,12 @@ public partial class CleanerPageViewModel : ObservableObject
     // --- Load ---------------------------------------------------------------
     // Parse Winapp2, keep only installed apps, then build the left pane from that.
     [RelayCommand(CanExecute = nameof(CanRefresh))]
-    private async Task RefreshAsync() => await LoadWinapp2Async(_lastPaths);  // reloads from disk
+    private async Task RefreshAsync()
+    {
+        DetectionService.ClearCache();
+        PathExpander.ClearCache();
+        await LoadWinapp2Async(_lastPaths);  // reloads from disk
+    }
     private bool CanRefresh() => !IsBusy && _lastPaths.Count > 0;
 
     public async Task LoadWinapp2Async(IList<string> filePaths)
@@ -143,6 +148,7 @@ public partial class CleanerPageViewModel : ObservableObject
     public async Task RefreshCustomEntriesAsync()
     {
         if (IsBusy) return;
+        PathExpander.ClearCache();
         _loadedEntries.RemoveAll(e => e.IsCustom);
         _loadedEntries.AddRange(await _customService.LoadEnabledEntriesAsync());
         RebuildVisibleCategories();
@@ -519,7 +525,7 @@ public partial class CleanerPageViewModel : ObservableObject
             {
                 var entryVm = new CleanerEntryViewModel(item.Entry);
 
-                entryVm.IsSelected = saved.Count > 0
+                entryVm.IsSelected = saved is not null
                     ? saved.Contains(item.Entry.Name)
                     : item.Entry.Default;
 
@@ -717,7 +723,7 @@ public partial class CleanerPageViewModel : ObservableObject
     {
         if (_suppressSave) return;
 
-        var selected = AppSettings.Instance.SelectedEntries.Count > 0
+        var selected = AppSettings.Instance.SelectedEntries is not null
             ? AppSettings.Instance.SelectedEntries.ToHashSet(StringComparer.OrdinalIgnoreCase)
             : _loadedEntries.Where(e => e.Default).Select(e => e.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
@@ -743,7 +749,7 @@ public partial class CleanerPageViewModel : ObservableObject
 
         //No custom selection saved yet >> seed from Winapp2 defaults so the first
         //manual toggle doesn't wipe every entry that was on by default
-        var selected = AppSettings.Instance.SelectedEntries.Count > 0
+        var selected = AppSettings.Instance.SelectedEntries is not null
             ? AppSettings.Instance.SelectedEntries.ToHashSet(StringComparer.OrdinalIgnoreCase)
             : _loadedEntries.Where(e => e.Default).Select(e => e.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
 

@@ -5,9 +5,7 @@ namespace FluentCleaner.Services;
 2. Walk directory trees where path segments contain * wildcards */
 public class PathExpander
 {
-    // Shared environment variable dictionary to avoid reallocating on every instance creation.
-    private static readonly Dictionary<string, string> _vars = BuildVarMap();
-    private static readonly char[] WildcardChars = new[] { '*', '?' };
+    private readonly Dictionary<string, string> _vars = BuildVarMap();
 
     private static Dictionary<string, string> BuildVarMap()
     {
@@ -46,15 +44,11 @@ public class PathExpander
 
     public string ExpandVariables(string path)
     {
-        // Performance optimization: skip variable replacement loops if there are no '%' characters in path.
-        if (path.IndexOf('%') >= 0)
-        {
-            foreach (var (token, value) in _vars)
-                path = path.Replace(token, value, StringComparison.OrdinalIgnoreCase);
+        foreach (var (token, value) in _vars)
+            path = path.Replace(token, value, StringComparison.OrdinalIgnoreCase);
 
-            // Let the OS handle any remaining %VAR% tokens we don't know about
-            path = Environment.ExpandEnvironmentVariables(path);
-        }
+        // Let the OS handle any remaining %VAR% tokens we don't know about
+        path = Environment.ExpandEnvironmentVariables(path);
 
         // %SystemDrive% (and any other bare drive reference) expands to "C:" without a
         // trailing backslash because BuildVarMap strips it to avoid double-backslashes in
@@ -91,16 +85,19 @@ public class PathExpander
         return results.ToList();
     }
 
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, bool> _dirExistsCache = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string[]> _dirEntriesCache = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string[]> _subDirsCache = new(StringComparer.OrdinalIgnoreCase);
+
+    public static void ClearCache()
+    {
+        _dirExistsCache.Clear();
+        _dirEntriesCache.Clear();
+        _subDirsCache.Clear();
+    }
+
     private static void ResolveRecursive(string path, HashSet<string> results)
     {
-        // Performance optimization: check if path contains wildcards before splitting strings.
-        if (path.IndexOfAny(WildcardChars) < 0)
-        {
-            // No wildcard, so this is a literal path, add as-is
-            results.Add(path);
-            return;
-        }
-
         var parts = path.Split(new[] { '\\', '/' }, StringSplitOptions.None);
 
         // Find the first segment that contains a wildcard
@@ -117,17 +114,45 @@ public class PathExpander
             ? Path.GetPathRoot(path) ?? ""
             : string.Join('\\', parts[..wcIdx]);
 
-        if (!Directory.Exists(basePath)) return;
+        if (basePath.Length == 2 && basePath[1] == ':')
+            basePath += '\\';
+
+        if (!_dirExistsCache.GetOrAdd(basePath, Directory.Exists)) return;
 
         var wildcard  = parts[wcIdx];
         var remaining = parts[(wcIdx + 1)..];
 
         try
         {
-            // If there are more segments after the wildcard, we only care about directories
-            var matches = remaining.Length == 0
-                ? Directory.GetFileSystemEntries(basePath, wildcard)
-                : Directory.GetDirectories(basePath, wildcard);
+            // If there are more segments after the wildcard, we only care about non-reparse directories
+            IEnumerable<string> matches;
+            if (remaining.Length == 0)
+            {
+                var cacheKey = basePath + "||" + wildcard;
+                matches = _dirEntriesCache.GetOrAdd(cacheKey, _ =>
+                {
+                    try { return Directory.GetFileSystemEntries(basePath, wildcard); }
+                    catch { return Array.Empty<string>(); }
+                });
+            }
+            else
+            {
+                var cacheKey = basePath + "||dirs||" + wildcard;
+                matches = _subDirsCache.GetOrAdd(cacheKey, _ =>
+                {
+                    try
+                    {
+                        return Directory.GetDirectories(basePath, wildcard)
+                               .Where(d =>
+                               {
+                                   try { return (File.GetAttributes(d) & FileAttributes.ReparsePoint) == 0; }
+                                   catch { return false; }
+                               })
+                               .ToArray();
+                    }
+                    catch { return Array.Empty<string>(); }
+                });
+            }
 
             foreach (var match in matches)
             {
@@ -137,11 +162,7 @@ public class PathExpander
                     ResolveRecursive(Path.Combine(match, string.Join('\\', remaining)), results);
             }
         }
-        catch (UnauthorizedAccessException ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"[PathExpander] Failed to access directory: {basePath}. Error: {ex.Message}");
-        }
-        catch (IOException ex)
+        catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"[PathExpander] Failed to access directory: {basePath}. Error: {ex.Message}");
         }

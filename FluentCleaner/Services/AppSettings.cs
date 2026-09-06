@@ -40,7 +40,7 @@ public class AppSettings
 
     public string? CustomWinapp2Path { get; set; }
     public string? Theme             { get; set; }
-    public HashSet<string> SelectedEntries { get; set; } = [];
+    public HashSet<string>? SelectedEntries { get; set; } = null;
 
     // which built-in databases to load on startup
     public bool EnableWinapp2 { get; set; } = true;
@@ -180,6 +180,10 @@ public class AppSettings
         var s = JsonSerializer.Deserialize<AppSettings>(json, JsonOptions) ?? new();
         s.CustomWinapp2Path = NormalizePath(s.CustomWinapp2Path);
 
+        // Security: Automatically disable post-clean commands on imported settings
+        // to prevent drive-by command execution from shared configuration files
+        s.PostCleanEnabled = false;
+
         if (!string.IsNullOrWhiteSpace(s.LegacyGroqApiKey))
         {
             s.GroqApiKey = s.LegacyGroqApiKey;
@@ -194,7 +198,11 @@ public class AppSettings
     private static string? NormalizePath(string? path)
     {
         if (string.IsNullOrWhiteSpace(path)) return null;
-        var result = Environment.ExpandEnvironmentVariables(path.Trim().Trim('"'));
+        var trimmed = path.Trim().Trim('"');
+        // Reject remote UNC network paths
+        if (trimmed.StartsWith(@"\\") || trimmed.StartsWith("//")) return null;
+
+        var result = Environment.ExpandEnvironmentVariables(trimmed);
         return string.IsNullOrWhiteSpace(result) ? null : result;
     }
 }

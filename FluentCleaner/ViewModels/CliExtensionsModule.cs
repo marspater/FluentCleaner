@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using FluentCleaner.Services;
 
 namespace FluentCleaner.ViewModels;
 
@@ -72,34 +73,44 @@ public class CliExtensionsModule
         }
 
         setBusy(true);
-        var display = optionArg is not null
-            ? $"{Path.GetFileNameWithoutExtension(script)} ({optionArg})"
-            : Path.GetFileNameWithoutExtension(script);
-        output.Add($"  Running {display}...");
-
-        var extra    = optionArg is not null ? $" \"{optionArg.Replace("\"", "\\\"")}\"" : "";
-        var progress = new Progress<string>(line => output.Add("  " + line));
-        await Task.Run(() =>
+        try
         {
-            var psi = new ProcessStartInfo("powershell.exe",
-                $"-NoProfile -ExecutionPolicy Bypass -File \"{script}\"{extra}")
-            {
-                RedirectStandardOutput = true,
-                RedirectStandardError  = true,
-                UseShellExecute        = false,
-                CreateNoWindow         = true
-            };
-            using var p = new Process { StartInfo = psi };
-            p.OutputDataReceived += (_, ev) => { if (ev.Data is not null) ((IProgress<string>)progress).Report(ev.Data); };
-            p.ErrorDataReceived  += (_, ev) => { if (ev.Data is not null) ((IProgress<string>)progress).Report("ERR: " + ev.Data); };
-            p.Start();
-            p.BeginOutputReadLine();
-            p.BeginErrorReadLine();
-            p.WaitForExit();
-        });
+            var display = optionArg is not null
+                ? $"{Path.GetFileNameWithoutExtension(script)} ({optionArg})"
+                : Path.GetFileNameWithoutExtension(script);
+            output.Add($"  Running {display}...");
 
-        output.Add("  Done.");
-        setBusy(false);
+            var extra    = optionArg is not null ? $" \"{optionArg.Replace("\"", "\\\"")}\"" : "";
+            var progress = new Progress<string>(line => output.Add("  " + line));
+            await Task.Run(() =>
+            {
+                var psi = new ProcessStartInfo(SecurityGuard.GetSafePowerShellPath(),
+                    $"-NoProfile -ExecutionPolicy Bypass -File \"{script}\"{extra}")
+                {
+                    RedirectStandardOutput = true,
+                    RedirectStandardError  = true,
+                    UseShellExecute        = false,
+                    CreateNoWindow         = true
+                };
+                using var p = new Process { StartInfo = psi };
+                p.OutputDataReceived += (_, ev) => { if (ev.Data is not null) ((IProgress<string>)progress).Report(ev.Data); };
+                p.ErrorDataReceived  += (_, ev) => { if (ev.Data is not null) ((IProgress<string>)progress).Report("ERR: " + ev.Data); };
+                p.Start();
+                p.BeginOutputReadLine();
+                p.BeginErrorReadLine();
+                p.WaitForExit();
+            });
+
+            output.Add("  Done.");
+        }
+        catch (Exception ex)
+        {
+            output.Add($"  Error executing tool: {ex.Message}");
+        }
+        finally
+        {
+            setBusy(false);
+        }
     }
 
     // --- Helpers ----------------------------------------------------------------

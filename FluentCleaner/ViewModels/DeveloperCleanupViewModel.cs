@@ -46,6 +46,7 @@ public partial class DeveloperCleanupViewModel : ObservableObject
     public ObservableCollection<TrashDirectoryViewModel> TrashDirectories { get; } = new();
 
     private CancellationTokenSource? _cts;
+    private CancellationTokenSource? _sizingCts;
     private bool _isUpdatingSelection;
 
     partial void OnIsBusyChanged(bool value)
@@ -95,6 +96,7 @@ public partial class DeveloperCleanupViewModel : ObservableObject
     private void Cancel()
     {
         _cts?.Cancel();
+        _sizingCts?.Cancel();
         StatusText = "Operation cancelled.";
     }
 
@@ -106,6 +108,15 @@ public partial class DeveloperCleanupViewModel : ObservableObject
             StatusText = "Please select a valid directory first.";
             return;
         }
+
+        if (!Services.SecurityGuard.IsSafeDeletionPath(RootPath))
+        {
+            StatusText = "Cannot scan drive roots or protected system directories.";
+            return;
+        }
+
+        _sizingCts?.Cancel();
+        _sizingCts = null;
 
         IsBusy = true;
         StatusText = "Scanning...";
@@ -165,7 +176,9 @@ public partial class DeveloperCleanupViewModel : ObservableObject
                 UpdateSelectAllState();
 
                 // Start calculating folder sizes in background
-                _ = CalculateSizesAsync(token);
+                _sizingCts = new CancellationTokenSource();
+                var sizingToken = _sizingCts.Token;
+                _ = CalculateSizesAsync(sizingToken);
             }
         }
         catch (OperationCanceledException)
@@ -193,6 +206,9 @@ public partial class DeveloperCleanupViewModel : ObservableObject
             return;
         }
 
+        _sizingCts?.Cancel();
+        _sizingCts = null;
+
         IsBusy = true;
         StatusText = "Nuking directories...";
         _cts = new CancellationTokenSource();
@@ -210,13 +226,14 @@ public partial class DeveloperCleanupViewModel : ObservableObject
                     token.ThrowIfCancellationRequested();
                     try
                     {
-                        if (Directory.Exists(item.Path))
+                        if (Directory.Exists(item.Path) && Services.SecurityGuard.IsSafeDeletionPath(item.Path))
                         {
-                            Directory.Delete(item.Path, true);
+                            DeleteDirectoryRecursiveSafe(item.Path, token);
                             deletedCount++;
                             totalFreed += item.SizeBytes;
                         }
                     }
+                    catch (OperationCanceledException) { throw; }
                     catch (Exception)
                     {
                         // Skip if locked or access denied
@@ -252,6 +269,29 @@ public partial class DeveloperCleanupViewModel : ObservableObject
         }
     }
 
+    private static void DeleteDirectoryRecursiveSafe(string path, CancellationToken token)
+    {
+        if (!Directory.Exists(path)) return;
+        
+        var di = new DirectoryInfo(path);
+        try
+        {
+            foreach (var file in di.EnumerateFiles("*", SearchOption.AllDirectories))
+            {
+                token.ThrowIfCancellationRequested();
+                try
+                {
+                    if (file.IsReadOnly)
+                        file.IsReadOnly = false;
+                }
+                catch { }
+            }
+        }
+        catch { }
+
+        di.Delete(true);
+    }
+
     private void ScanDirectory(string path, List<string> results, List<string> targets, CancellationToken token, IProgress<string> progress)
     {
         token.ThrowIfCancellationRequested();
@@ -262,6 +302,14 @@ public partial class DeveloperCleanupViewModel : ObservableObject
             foreach (var dir in dirs)
             {
                 token.ThrowIfCancellationRequested();
+                
+                try
+                {
+                    if ((File.GetAttributes(dir) & FileAttributes.ReparsePoint) != 0)
+                        continue;
+                }
+                catch { continue; }
+
                 var name = Path.GetFileName(dir);
                 
                 bool isTarget = false;
@@ -293,13 +341,15 @@ public partial class DeveloperCleanupViewModel : ObservableObject
 
     private async Task CalculateSizesAsync(CancellationToken token)
     {
-        foreach (var item in TrashDirectories)
+        var itemsSnapshot = TrashDirectories.ToList();
+        foreach (var item in itemsSnapshot)
         {
             if (token.IsCancellationRequested) break;
             
             try
             {
                 long size = await Task.Run(() => CalculateDirectorySize(item.Path, token), token);
+                if (token.IsCancellationRequested) break;
                 item.SizeBytes = size;
                 item.SizeText = ScanResult.FormatBytes(size);
             }
@@ -321,10 +371,19 @@ public partial class DeveloperCleanupViewModel : ObservableObject
         try
         {
             var di = new DirectoryInfo(path);
-            foreach (var fi in di.EnumerateFiles("*", SearchOption.AllDirectories))
+            if ((di.Attributes & FileAttributes.ReparsePoint) != 0) return 0;
+
+            foreach (var fi in di.EnumerateFiles())
             {
                 token.ThrowIfCancellationRequested();
-                size += fi.Length;
+                try { size += fi.Length; } catch { }
+            }
+
+            foreach (var sub in di.EnumerateDirectories())
+            {
+                token.ThrowIfCancellationRequested();
+                if ((sub.Attributes & FileAttributes.ReparsePoint) != 0) continue;
+                size += CalculateDirectorySize(sub.FullName, token);
             }
         }
         catch { }

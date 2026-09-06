@@ -53,7 +53,7 @@ namespace FluentCleaner.Tests.Services
             }
 
             // Assert
-            Assert.Contains("Mock exception", result);
+            Assert.True(result.Contains("Mock exception") || result.Contains("AI_NetworkError"));
         }
 
         private class MockHttpMessageHandler : HttpMessageHandler

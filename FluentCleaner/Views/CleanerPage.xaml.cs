@@ -76,127 +76,208 @@ public sealed partial class CleanerPage : Page, ISearchablePage, IPageActions
     // Headers and registry keys are ignored; only real file paths get /select treatment.
     private void DetailList_ItemClick(object sender, ItemClickEventArgs e)
     {
-        if (e.ClickedItem is not DetailLine { IsHeader: false } line) return;
-        var path = line.Text;
-        if (string.IsNullOrWhiteSpace(path) || path.Contains('"') || path.StartsWith("HK", StringComparison.OrdinalIgnoreCase)) return;
+        try
+        {
+            if (e.ClickedItem is not DetailLine { IsHeader: false } line) return;
+            var path = line.Text;
+            if (string.IsNullOrWhiteSpace(path) || path.Contains('"') || path.StartsWith("HK", StringComparison.OrdinalIgnoreCase)) return;
 
-        System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{path}\"");
+            if (File.Exists(path) || Directory.Exists(path))
+            {
+                System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{path}\"");
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[DetailList_ItemClick] Error: {ex.Message}");
+        }
     }
 
     // Right-click "Exclude file";protects just this one file (FILE|dir|name)
     private void ExcludeFile_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not MenuFlyoutItem { Tag: string path } || string.IsNullOrWhiteSpace(path)) return;
-        if (path.StartsWith("HK", StringComparison.OrdinalIgnoreCase)) return;
+        try
+        {
+            if (sender is not MenuFlyoutItem { Tag: string path } || string.IsNullOrWhiteSpace(path)) return;
+            if (path.StartsWith("HK", StringComparison.OrdinalIgnoreCase)) return;
 
-        var dir  = Path.GetDirectoryName(path);
-        var file = Path.GetFileName(path);
-        if (string.IsNullOrEmpty(dir) || string.IsNullOrEmpty(file)) return;
+            var dir  = Path.GetDirectoryName(path);
+            var file = Path.GetFileName(path);
+            if (string.IsNullOrEmpty(dir) || string.IsNullOrEmpty(file)) return;
 
-        AddGlobalExclusion($"FILE|{dir}|{file}", ResourceService.Fmt("St_ExcludedFile", file));
+            AddGlobalExclusion($"FILE|{dir}|{file}", ResourceService.Fmt("St_ExcludedFile", file));
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ExcludeFile_Click] Error: {ex.Message}");
+        }
     }
 
     // Right-click "Exclude folder";protects the entire parent folder tree (PATH|dir)
     private void ExcludeFolder_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not MenuFlyoutItem { Tag: string path } || string.IsNullOrWhiteSpace(path)) return;
-        if (path.StartsWith("HK", StringComparison.OrdinalIgnoreCase)) return;
+        try
+        {
+            if (sender is not MenuFlyoutItem { Tag: string path } || string.IsNullOrWhiteSpace(path)) return;
+            if (path.StartsWith("HK", StringComparison.OrdinalIgnoreCase)) return;
 
-        var dir = Path.GetDirectoryName(path);
-        if (string.IsNullOrEmpty(dir)) return;
+            var dir = Path.GetDirectoryName(path);
+            if (string.IsNullOrEmpty(dir)) return;
 
-        AddGlobalExclusion($"PATH|{dir}", ResourceService.Fmt("St_ExcludedFolder", dir));
+            AddGlobalExclusion($"PATH|{dir}", ResourceService.Fmt("St_ExcludedFolder", dir));
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ExcludeFolder_Click] Error: {ex.Message}");
+        }
     }
 
     private void AddGlobalExclusion(string rule, string status)
     {
-        var settings = Services.AppSettings.Instance;
-        if (settings.GlobalExclusions.Contains(rule, StringComparer.OrdinalIgnoreCase)) return;
+        try
+        {
+            var settings = Services.AppSettings.Instance;
+            if (settings.GlobalExclusions.Contains(rule, StringComparer.OrdinalIgnoreCase)) return;
 
-        settings.GlobalExclusions.Add(rule);
-        settings.GlobalExclusionsEnabled = true;
-        settings.Save();
-        ViewModel.StatusText = status;
+            settings.GlobalExclusions.Add(rule);
+            settings.GlobalExclusionsEnabled = true;
+            settings.Save();
+            ViewModel.StatusText = status;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[AddGlobalExclusion] Error: {ex.Message}");
+        }
     }
 
     // Entry flyout; Tag="{x:Bind}" gives us the CleanerEntryViewModel directly
     private async void EntryAnalyze_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is MenuFlyoutItem { Tag: CleanerEntryViewModel vm })
-            await ViewModel.AnalyzeSingleEntryAsync(vm);
+        try
+        {
+            if (sender is MenuFlyoutItem { Tag: CleanerEntryViewModel vm })
+                await ViewModel.AnalyzeSingleEntryAsync(vm);
+        }
+        catch (Exception ex)
+        {
+            ViewModel.StatusText = $"Analysis error: {ex.Message}";
+        }
     }
 
     private async void EntryClean_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is MenuFlyoutItem { Tag: CleanerEntryViewModel vm })
+        try
         {
-            if (!await CheckRunningBrowsersAsync([vm])) return;
-            if (!await ConfirmWarningsAsync(ViewModel.GetWarningsForEntry(vm)))
-                return;
+            if (sender is MenuFlyoutItem { Tag: CleanerEntryViewModel vm })
+            {
+                if (ViewModel.IsBusy) return;
+                if (!await CheckRunningBrowsersAsync([vm])) return;
+                if (ViewModel.IsBusy) return;
+                if (!await ConfirmWarningsAsync(ViewModel.GetWarningsForEntry(vm)))
+                    return;
+                if (ViewModel.IsBusy) return;
 
-            await ViewModel.CleanSingleEntryAsync(vm);
+                await ViewModel.CleanSingleEntryAsync(vm);
+            }
+        }
+        catch (Exception ex)
+        {
+            ViewModel.StatusText = $"Cleaning error: {ex.Message}";
         }
     }
 
     // Ask Groq to explain the entry;result is cached so repeated opens are instant
     private async void EntryExplain_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not MenuFlyoutItem { Tag: CleanerEntryViewModel vm }) return;
+        if (sender is not MenuFlyoutItem { Tag: CleanerEntryViewModel vm } || XamlRoot is null) return;
 
-        var textBlock = new TextBlock
+        try
         {
-            Text = ResourceService.Get("DlgExplainThinking"),
-            TextWrapping = TextWrapping.Wrap,
-            MaxWidth = 400
-        };
+            var textBlock = new TextBlock
+            {
+                Text = ResourceService.Get("DlgExplainThinking"),
+                TextWrapping = TextWrapping.Wrap,
+                MaxWidth = 400
+            };
 
-        var dialog = new ContentDialog
+            var dialog = new ContentDialog
+            {
+                XamlRoot        = XamlRoot,
+                RequestedTheme  = ActualTheme,
+                CornerRadius    = new CornerRadius(8),
+                Title           = vm.Name,
+                CloseButtonText = ResourceService.Get("DlgExplainClose"),
+                Content         = textBlock
+            };
+
+            var explainTask = AiExplainer.ExplainAsync(vm.Entry);
+            var showTask = DialogHelper.ShowSafeAsync(dialog);
+            textBlock.Text = await explainTask;
+            await showTask;
+        }
+        catch (Exception ex)
         {
-            XamlRoot        = XamlRoot,
-            RequestedTheme  = ActualTheme,
-            CornerRadius    = new CornerRadius(8),
-            Title           = vm.Name,
-            CloseButtonText = ResourceService.Get("DlgExplainClose"),
-            Content         = textBlock
-        };
-
-        // Show the dialog immediately (don't await), then fill in the answer
-        var showTask = dialog.ShowAsync().AsTask();
-        textBlock.Text = await AiExplainer.ExplainAsync(vm.Entry);
-        await showTask;
+            ViewModel.StatusText = $"Explain error: {ex.Message}";
+        }
     }
 
 
     // Category flyout;same trick with CleanerCategoryViewModel
     private async void CatAnalyze_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is MenuFlyoutItem { Tag: CleanerCategoryViewModel vm })
-            await ViewModel.AnalyzeCategoryAsync(vm);
+        try
+        {
+            if (sender is MenuFlyoutItem { Tag: CleanerCategoryViewModel vm })
+                await ViewModel.AnalyzeCategoryAsync(vm);
+        }
+        catch (Exception ex)
+        {
+            ViewModel.StatusText = $"Category analysis error: {ex.Message}";
+        }
     }
 
     private async void CatClean_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is MenuFlyoutItem { Tag: CleanerCategoryViewModel vm })
+        try
         {
-            var selected = vm.Entries.Where(e => e.IsSelected).ToList();
-            if (!await CheckRunningBrowsersAsync(selected)) return;
-            if (!await ConfirmWarningsAsync(ViewModel.GetWarningsForCategory(vm)))
-                return;
+            if (sender is MenuFlyoutItem { Tag: CleanerCategoryViewModel vm })
+            {
+                if (ViewModel.IsBusy) return;
+                var selected = vm.Entries.Where(e => e.IsSelected).ToList();
+                if (!await CheckRunningBrowsersAsync(selected)) return;
+                if (ViewModel.IsBusy) return;
+                if (!await ConfirmWarningsAsync(ViewModel.GetWarningsForCategory(vm)))
+                    return;
+                if (ViewModel.IsBusy) return;
 
-            await ViewModel.CleanCategoryAsync(vm);
+                await ViewModel.CleanCategoryAsync(vm);
+            }
+        }
+        catch (Exception ex)
+        {
+            ViewModel.StatusText = $"Category clean error: {ex.Message}";
         }
     }
 
     private async void RunCleaner_Click(object sender, RoutedEventArgs e)
     {
-        if (!ViewModel.RunCleanerCommand.CanExecute(null))
-            return;
+        try
+        {
+            if (!ViewModel.RunCleanerCommand.CanExecute(null))
+                return;
 
-        if (!await CheckRunningBrowsersAsync()) return;
-        if (!await ConfirmWarningsAsync(ViewModel.GetWarningsForSelectedEntries()))
-            return;
+            if (!await CheckRunningBrowsersAsync()) return;
+            if (!ViewModel.RunCleanerCommand.CanExecute(null)) return;
+            if (!await ConfirmWarningsAsync(ViewModel.GetWarningsForSelectedEntries()))
+                return;
+            if (!ViewModel.RunCleanerCommand.CanExecute(null)) return;
 
-        await ((IAsyncRelayCommand)ViewModel.RunCleanerCommand).ExecuteAsync(null);
+            await ((IAsyncRelayCommand)ViewModel.RunCleanerCommand).ExecuteAsync(null);
+        }
+        catch (Exception ex)
+        {
+            ViewModel.StatusText = $"Cleaner error: {ex.Message}";
+        }
     }
 
     // Check for running browsers;only warns when browser entries are actually selected
@@ -212,6 +293,8 @@ public sealed partial class CleanerPage : Page, ISearchablePage, IPageActions
 
     private async Task<bool> CheckRunningBrowsersAsync(IEnumerable<CleanerEntryViewModel>? selectedEntries = null)
     {
+        if (XamlRoot is null) return true;
+
         var selectedCodes = (selectedEntries ?? ViewModel.FlatEntries.Where(e => e.IsSelected))
             .Select(e => e.Entry.LangSecRef ?? -1)
             .ToHashSet();
@@ -237,13 +320,13 @@ public sealed partial class CleanerPage : Page, ISearchablePage, IPageActions
             Content           = ResourceService.Fmt("DlgBrowsersMessage", string.Join(", ", running))
         };
 
-        return await dialog.ShowAsync() == ContentDialogResult.Primary;
+        return await DialogHelper.ShowSafeAsync(dialog) == ContentDialogResult.Primary;
     }
 
     // Show a warning dialog if any of the selected entries have warnings;return true to proceed with cleaning
     private async Task<bool> ConfirmWarningsAsync(IReadOnlyList<string> warnings)
     {
-        if (warnings.Count == 0)
+        if (warnings.Count == 0 || XamlRoot is null)
             return true;
 
         var dialog = new ContentDialog
@@ -269,24 +352,6 @@ public sealed partial class CleanerPage : Page, ISearchablePage, IPageActions
             }
         };
 
-        return await dialog.ShowAsync() == ContentDialogResult.Primary;
-    }
-
-    // Show/hide the [...] button when hovering over a category header or entry row.
-    // the buttons sit at Opacity="0" 
-    private void CatHeader_PointerEntered(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e) =>
-        SetMenuButtonOpacity(sender, 1);
-    private void CatHeader_PointerExited(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e) =>
-        SetMenuButtonOpacity(sender, 0);
-    private void EntryRow_PointerEntered(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e) =>
-        SetMenuButtonOpacity(sender, 1);
-    private void EntryRow_PointerExited(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e) =>
-        SetMenuButtonOpacity(sender, 0);
-
-    private static void SetMenuButtonOpacity(object sender, double opacity)
-    {
-        if (sender is Grid g)
-            foreach (var btn in g.Children.OfType<Button>())
-                btn.Opacity = opacity;
+        return await DialogHelper.ShowSafeAsync(dialog) == ContentDialogResult.Primary;
     }
 }

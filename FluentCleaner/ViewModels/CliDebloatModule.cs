@@ -69,20 +69,29 @@ public class CliDebloatModule
     private async Task ListAllAsync(ObservableCollection<string> output, Action<bool> setBusy)
     {
         setBusy(true);
-        output.Add(ResourceService.Get("CLI_AppxListStart"));
-        var names = await AppxService.GetInstalledNamesAsync();
-
-        if (names.Count == 0)
+        try
         {
-            output.Add(ResourceService.Get("CLI_AppxNoPackages"));
-            setBusy(false);
-            return;
-        }
+            output.Add(ResourceService.Get("CLI_AppxListStart"));
+            var names = await AppxService.GetInstalledNamesAsync();
 
-        foreach (var n in names)
-            output.Add($"  {n}");
-        output.Add(ResourceService.Fmt("CLI_AppxListDone", names.Count));
-        setBusy(false);
+            if (names.Count == 0)
+            {
+                output.Add(ResourceService.Get("CLI_AppxNoPackages"));
+                return;
+            }
+
+            foreach (var n in names)
+                output.Add($"  {n}");
+            output.Add(ResourceService.Fmt("CLI_AppxListDone", names.Count));
+        }
+        catch (Exception ex)
+        {
+            output.Add($"  Error listing packages: {ex.Message}");
+        }
+        finally
+        {
+            setBusy(false);
+        }
     }
 
     // Lists Winappx.ini entries that are currently installed (bloatware only)
@@ -92,20 +101,29 @@ public class CliDebloatModule
         if (entries.Count == 0) return;
 
         setBusy(true);
-        output.Add(ResourceService.Get("CLI_AppxScanStart"));
-        var found = await AppxService.ScanInstalledAsync(entries);
-
-        if (found.Count == 0)
+        try
         {
-            output.Add(ResourceService.Get("CLI_AppxNothingFound"));
-            setBusy(false);
-            return;
-        }
+            output.Add(ResourceService.Get("CLI_AppxScanStart"));
+            var found = await AppxService.ScanInstalledAsync(entries);
 
-        foreach (var e in found)
-            output.Add($"  {e.Name}  [{e.PackageName}]");
-        output.Add(ResourceService.Fmt("CLI_AppxScanDone", found.Count));
-        setBusy(false);
+            if (found.Count == 0)
+            {
+                output.Add(ResourceService.Get("CLI_AppxNothingFound"));
+                return;
+            }
+
+            foreach (var e in found)
+                output.Add($"  {e.Name}  [{e.PackageName}]");
+            output.Add(ResourceService.Fmt("CLI_AppxScanDone", found.Count));
+        }
+        catch (Exception ex)
+        {
+            output.Add($"  Error scanning packages: {ex.Message}");
+        }
+        finally
+        {
+            setBusy(false);
+        }
     }
 
     // Removes a single named entry or every installed entry from the list
@@ -141,22 +159,32 @@ public class CliDebloatModule
         }
 
         setBusy(true);
-        int removed = 0;
-
-        foreach (var e in targets)
+        try
         {
-            if (e.Warning is not null) output.Add($"  [!] {e.Warning}");
-            output.Add(ResourceService.Fmt("CLI_AppxRemoving", e.Name));
+            int removed = 0;
 
-            var ok = await AppxService.RemoveAsync(e);
-            if (ok) { output.Add(ResourceService.Fmt("CLI_AppxRemoveOk", e.Name)); removed++; }
-            else    output.Add(ResourceService.Fmt("CLI_AppxRemoveErr", e.Name));
+            foreach (var e in targets)
+            {
+                if (e.Warning is not null) output.Add($"  [!] {e.Warning}");
+                output.Add(ResourceService.Fmt("CLI_AppxRemoving", e.Name));
+
+                var ok = await AppxService.RemoveAsync(e);
+                if (ok) { output.Add(ResourceService.Fmt("CLI_AppxRemoveOk", e.Name)); removed++; }
+                else    output.Add(ResourceService.Fmt("CLI_AppxRemoveErr", e.Name));
+            }
+
+            output.Add(removed > 0
+                ? ResourceService.Fmt("CLI_AppxRemoveDone", removed)
+                : ResourceService.Get("CLI_AppxNothingRemoved"));
         }
-
-        output.Add(removed > 0
-            ? ResourceService.Fmt("CLI_AppxRemoveDone", removed)
-            : ResourceService.Get("CLI_AppxNothingRemoved"));
-        setBusy(false);
+        catch (Exception ex)
+        {
+            output.Add($"  Error removing packages: {ex.Message}");
+        }
+        finally
+        {
+            setBusy(false);
+        }
     }
 
     // --- Helpers ----------------------------------------------------------------

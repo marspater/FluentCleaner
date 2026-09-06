@@ -14,15 +14,19 @@ namespace FluentCleaner.Services;
 public static class AiExplainer
 {
     private static HttpClient _http = new();
+    private static readonly Lock _lock = new();
     private static readonly Dictionary<string, string> _cache = new(StringComparer.OrdinalIgnoreCase);
 
     public static async Task<string> ExplainAsync(CleanerEntry entry)
     {
-        if (_cache.TryGetValue(entry.Name, out var cached))
-            return cached;
+        lock (_lock)
+        {
+            if (_cache.TryGetValue(entry.Name, out var cached))
+                return cached;
+        }
 
-        var apiKey = AppSettings.Instance.GroqApiKey
-                     ?? Environment.GetEnvironmentVariable("GROQ_API_KEY");
+        var apiKey = (AppSettings.Instance.GroqApiKey
+                     ?? Environment.GetEnvironmentVariable("GROQ_API_KEY"))?.Trim();
         if (string.IsNullOrWhiteSpace(apiKey))
             return ResourceService.Get("AI_NoKey");
 
@@ -30,6 +34,7 @@ public static class AiExplainer
 
         try
         {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(20));
             using var req = new HttpRequestMessage(HttpMethod.Post, "https://api.groq.com/openai/v1/chat/completions");
             req.Headers.Add("Authorization", $"Bearer {apiKey}");
             req.Content = new StringContent(
@@ -45,8 +50,21 @@ public static class AiExplainer
                 }),
                 Encoding.UTF8, "application/json");
 
-            var res  = await _http.SendAsync(req);
-            var json = await res.Content.ReadAsStringAsync();
+            var res  = await _http.SendAsync(req, cts.Token);
+            var json = await res.Content.ReadAsStringAsync(cts.Token);
+
+            if (!res.IsSuccessStatusCode)
+            {
+                try
+                {
+                    using var errDoc = JsonDocument.Parse(json);
+                    if (errDoc.RootElement.TryGetProperty("error", out var errObj) &&
+                        errObj.TryGetProperty("message", out var errMsg))
+                        return ResourceService.Fmt("AI_ApiError", errMsg.GetString() ?? $"HTTP {(int)res.StatusCode}");
+                }
+                catch { }
+                return ResourceService.Fmt("AI_ApiError", $"HTTP {(int)res.StatusCode} {res.ReasonPhrase}");
+            }
 
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
@@ -57,14 +75,23 @@ public static class AiExplainer
                 return ResourceService.Fmt("AI_ApiError", msg);
             }
 
-            var text = root
-                .GetProperty("choices")[0]
+            if (!root.TryGetProperty("choices", out var choices) || choices.GetArrayLength() == 0)
+                return ResourceService.Get("AI_NoResponse");
+
+            var text = choices[0]
                 .GetProperty("message")
                 .GetProperty("content")
                 .GetString() ?? ResourceService.Get("AI_NoResponse");
 
-            _cache[entry.Name] = text;
+            lock (_lock)
+            {
+                _cache[entry.Name] = text;
+            }
             return text;
+        }
+        catch (TaskCanceledException)
+        {
+            return ResourceService.Fmt("AI_NetworkError", "Request timed out.");
         }
         catch (Exception ex)
         {
@@ -121,13 +148,14 @@ public static class AiExplainer
     // Shared HTTP helper used by GenerateEntryAsync and GenerateScriptAsync.
     private static async Task<string> GenerateAsync(string userMsg, string systemPrompt, string errorPrefix)
     {
-        var apiKey = AppSettings.Instance.GroqApiKey
-                     ?? Environment.GetEnvironmentVariable("GROQ_API_KEY");
+        var apiKey = (AppSettings.Instance.GroqApiKey
+                     ?? Environment.GetEnvironmentVariable("GROQ_API_KEY"))?.Trim();
         if (string.IsNullOrWhiteSpace(apiKey))
             return $"{errorPrefix}{ResourceService.Get("AI_NoKeyShort")}";
 
         try
         {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(20));
             using var req = new HttpRequestMessage(HttpMethod.Post, "https://api.groq.com/openai/v1/chat/completions");
             req.Headers.Add("Authorization", $"Bearer {apiKey}");
             req.Content = new StringContent(
@@ -143,8 +171,21 @@ public static class AiExplainer
                 }),
                 Encoding.UTF8, "application/json");
 
-            var res  = await _http.SendAsync(req);
-            var json = await res.Content.ReadAsStringAsync();
+            var res  = await _http.SendAsync(req, cts.Token);
+            var json = await res.Content.ReadAsStringAsync(cts.Token);
+
+            if (!res.IsSuccessStatusCode)
+            {
+                try
+                {
+                    using var errDoc = JsonDocument.Parse(json);
+                    if (errDoc.RootElement.TryGetProperty("error", out var errObj) &&
+                        errObj.TryGetProperty("message", out var errMsg))
+                        return $"{errorPrefix}Groq error: {errMsg.GetString()}";
+                }
+                catch { }
+                return $"{errorPrefix}Groq error: HTTP {(int)res.StatusCode} {res.ReasonPhrase}";
+            }
 
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
@@ -155,11 +196,17 @@ public static class AiExplainer
                 return $"{errorPrefix}Groq error: {msg}";
             }
 
-            return root
-                .GetProperty("choices")[0]
+            if (!root.TryGetProperty("choices", out var choices) || choices.GetArrayLength() == 0)
+                return $"{errorPrefix}No response received.";
+
+            return choices[0]
                 .GetProperty("message")
                 .GetProperty("content")
                 .GetString() ?? $"{errorPrefix}No response received.";
+        }
+        catch (TaskCanceledException)
+        {
+            return $"{errorPrefix}Request timed out.";
         }
         catch (Exception ex)
         {
@@ -171,8 +218,13 @@ public static class AiExplainer
     //just a quick key test;asks Groq one sentence about FluentCleaner; returns "✓ " or "✗"
     public static async Task<string> TestKeyAsync(string apiKey)
     {
+        apiKey = apiKey?.Trim() ?? "";
+        if (string.IsNullOrWhiteSpace(apiKey))
+            return "✗ API key is empty.";
+
         try
         {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
             using var req = new HttpRequestMessage(HttpMethod.Post, "https://api.groq.com/openai/v1/chat/completions");
             req.Headers.Add("Authorization", $"Bearer {apiKey}");
             req.Content = new StringContent(
@@ -190,8 +242,22 @@ public static class AiExplainer
                 }),
                 Encoding.UTF8, "application/json");
 
-            var res  = await _http.SendAsync(req);
-            var json = await res.Content.ReadAsStringAsync();
+            var res  = await _http.SendAsync(req, cts.Token);
+            var json = await res.Content.ReadAsStringAsync(cts.Token);
+
+            if (!res.IsSuccessStatusCode)
+            {
+                try
+                {
+                    using var errDoc = JsonDocument.Parse(json);
+                    if (errDoc.RootElement.TryGetProperty("error", out var errObj) &&
+                        errObj.TryGetProperty("message", out var errMsg))
+                        return "✗ " + (errMsg.GetString() ?? $"HTTP {(int)res.StatusCode}");
+                }
+                catch { }
+                return $"✗ HTTP {(int)res.StatusCode} {res.ReasonPhrase}";
+            }
+
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
 
@@ -200,6 +266,10 @@ public static class AiExplainer
 
             var text = root.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString();
             return "✓ " + text;
+        }
+        catch (TaskCanceledException)
+        {
+            return "✗ Request timed out.";
         }
         catch (Exception ex)
         {
