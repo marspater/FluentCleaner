@@ -20,11 +20,6 @@ public class CliCleanerModule
     // Returns (databaseCount, entryCount) so CliViewModel can format the startup message.
     public async Task<(int Databases, int Entries)> InitAsync()
     {
-        // Old single-database terminal loading. I kept this here as reference because
-        // the Cleaner page now supports with v26.04.30 multiple enabled databases.
-        // var path = AppSettings.Instance.ResolveWinapp2Path();
-        // var all = await _parser.ParseFileAsync(path);
-
         // Match the Cleaner page: load every enabled database, merge entries,
         // then deduplicate by name so Winapp2/Winapp3/custom overlaps stay sane.
         var paths = AppSettings.Instance.ResolveDatabasePaths().ToList();
