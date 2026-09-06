@@ -27,7 +27,7 @@ public partial class SettingsPageViewModel : ObservableObject
 
     // Database toggles
     [ObservableProperty] public partial bool   EnableWinapp2 { get; set; } = true;
-    [ObservableProperty] public partial bool   EnableWinapp3 { get; set; };
+    [ObservableProperty] public partial bool   EnableWinapp3 { get; set; }
     [ObservableProperty] public partial bool   EnableWinappx { get; set; } = true;
     [ObservableProperty] public partial bool   Winapp3Available { get; set; }    // Winapp3.ini exists on disk
     [ObservableProperty] public partial bool   Winapp3NotAvailable { get; set; } // inverse; drives the Download button
@@ -44,11 +44,11 @@ public partial class SettingsPageViewModel : ObservableObject
     [ObservableProperty] public partial string CustomPath { get; set; } = "";
 
     // Post-clean tasks
-    [ObservableProperty] public partial bool   PostCleanEnabled  { get; set; };
+    [ObservableProperty] public partial bool   PostCleanEnabled  { get; set; }
     [ObservableProperty] public partial string PostCleanCommands { get; set; } = "";
 
     // Global exclusions;paths that are never cleaned, no matter what the INI says
-    [ObservableProperty] public partial bool   GlobalExclusionsEnabled { get; set; };
+    [ObservableProperty] public partial bool   GlobalExclusionsEnabled { get; set; }
     [ObservableProperty] public partial string GlobalExclusionsText    { get; set; } = "";
 
     // History
@@ -59,8 +59,8 @@ public partial class SettingsPageViewModel : ObservableObject
     // Shared
     [ObservableProperty] public partial string StatusText { get; set; } = "";
     [ObservableProperty] public partial bool   IsBusy { get; set; }             // single ring for all downloads
-    [ObservableProperty] public partial int    ThemeIndex    { get; set; };
-    [ObservableProperty] public partial bool   RestartRequired { get; set; };
+    [ObservableProperty] public partial int    ThemeIndex    { get; set; }
+    [ObservableProperty] public partial bool   RestartRequired { get; set; }
 
     // Language dropdown — populated at runtime from the deployed Strings\{lang}\ folders.
     public ObservableCollection<LanguageOption> Languages { get; } = [];
