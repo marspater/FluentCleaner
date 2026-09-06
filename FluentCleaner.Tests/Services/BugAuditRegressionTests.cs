@@ -101,6 +101,28 @@ public class BugAuditRegressionTests
     }
 
     [Fact]
+    public void ProcessStartInfo_ScriptExecution_ForcesUseShellExecuteFalse()
+    {
+        var psi = new System.Diagnostics.ProcessStartInfo(SecurityGuard.GetSafePowerShellPath())
+        {
+            WorkingDirectory = System.AppContext.BaseDirectory,
+            UseShellExecute = false
+        };
+
+        psi.ArgumentList.Add("-NoExit");
+        psi.ArgumentList.Add("-NoProfile");
+        psi.ArgumentList.Add("-ExecutionPolicy");
+        psi.ArgumentList.Add("Bypass");
+        psi.ArgumentList.Add("-File");
+        psi.ArgumentList.Add("testScript.ps1");
+        psi.ArgumentList.Add("arg1; calc.exe");
+
+        Assert.False(psi.UseShellExecute);
+        Assert.Equal(7, psi.ArgumentList.Count);
+        Assert.Equal("arg1; calc.exe", psi.ArgumentList[6]);
+    }
+
+    [Fact]
     public void ProcessStartInfo_ArgumentList_PreventsCommandInjectionInPathsAndArgs()
     {
         var scriptPath = @"C:\Extensions\a""; calc.exe; #.ps1";
