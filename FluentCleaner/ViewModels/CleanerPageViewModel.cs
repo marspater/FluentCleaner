@@ -436,10 +436,15 @@ public partial class CleanerPageViewModel : ObservableObject
         try
         {
             var selected = categoryVm.Entries.Where(e => e.IsSelected).ToList();
-            foreach (var vm in selected.Where(vm => !_lastScan.Any(r => r.Entry == vm.Entry)))
-                await AnalyzeEntryInternalAsync(vm.Entry, progress, keepDetailSelection: false, cts.Token);
+            var scannedEntries = _lastScan.Select(r => r.Entry).ToHashSet();
+            foreach (var vm in selected)
+            {
+                if (scannedEntries.Add(vm.Entry))
+                    await AnalyzeEntryInternalAsync(vm.Entry, progress, keepDetailSelection: false, cts.Token);
+            }
 
-            var results               = _lastScan.Where(r => selected.Any(vm => vm.Entry == r.Entry)).ToList();
+            var selectedEntries = selected.Select(vm => vm.Entry).ToHashSet();
+            var results               = _lastScan.Where(r => selectedEntries.Contains(r.Entry)).ToList();
             var (removed, freedBytes) = await CleanResultsAsync(results, progress, cts.Token);
 
             UpdateTotalsFromLastScan();
