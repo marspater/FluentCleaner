@@ -42,6 +42,7 @@
                                          PlaceholderText="Select project or workspace directory (e.g. C:\Projects)"
                                          Text="{x:Bind ViewModel.RootPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                          IsEnabled="{x:Bind ViewModel.IsNotBusy, Mode=OneWay}"
+                                         AutomationProperties.Name="Workspace directory path"
                                          FontSize="12" />
                                          
                                 <Button Grid.Column="1" Content="Browse…"
