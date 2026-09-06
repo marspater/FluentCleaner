@@ -62,7 +62,10 @@ public static class AiExplainer
                         errObj.TryGetProperty("message", out var errMsg))
                         return ResourceService.Fmt("AI_ApiError", errMsg.GetString() ?? $"HTTP {(int)res.StatusCode}");
                 }
-                catch { }
+                catch (JsonException ex)
+                {
+                    System.Diagnostics.Debug.WriteLine(ex);
+                }
                 return ResourceService.Fmt("AI_ApiError", $"HTTP {(int)res.StatusCode} {res.ReasonPhrase}");
             }
 
@@ -183,7 +186,10 @@ public static class AiExplainer
                         errObj.TryGetProperty("message", out var errMsg))
                         return $"{errorPrefix}Groq error: {errMsg.GetString()}";
                 }
-                catch { }
+                catch (JsonException ex)
+                {
+                    System.Diagnostics.Debug.WriteLine(ex);
+                }
                 return $"{errorPrefix}Groq error: HTTP {(int)res.StatusCode} {res.ReasonPhrase}";
             }
 
@@ -254,7 +260,10 @@ public static class AiExplainer
                         errObj.TryGetProperty("message", out var errMsg))
                         return "✗ " + (errMsg.GetString() ?? $"HTTP {(int)res.StatusCode}");
                 }
-                catch { }
+                catch (JsonException ex)
+                {
+                    System.Diagnostics.Debug.WriteLine(ex);
+                }
                 return $"✗ HTTP {(int)res.StatusCode} {res.ReasonPhrase}";
             }
 

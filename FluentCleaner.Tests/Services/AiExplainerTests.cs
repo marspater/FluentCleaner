@@ -66,6 +66,53 @@ namespace FluentCleaner.Tests.Services
                 throw new Exception("Mock exception from HttpClient");
             }
         }
+
+        [Fact]
+        public async Task ExplainAsync_HandlesInvalidJsonErrorResponse_WithoutThrowing()
+        {
+            var entry = new CleanerEntry { Name = "InvalidJsonEntry" };
+
+            var field = typeof(AiExplainer).GetField("_http", BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.NotNull(field);
+            var originalHttp = field.GetValue(null);
+
+            var handler = new MockBadJsonMessageHandler();
+            var fakeHttp = new HttpClient(handler);
+            field.SetValue(null, fakeHttp);
+
+            Environment.SetEnvironmentVariable("GROQ_API_KEY", "dummy-key");
+
+            var cacheField = typeof(AiExplainer).GetField("_cache", BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.NotNull(cacheField);
+            var cache = cacheField.GetValue(null) as System.Collections.Generic.Dictionary<string, string>;
+            Assert.NotNull(cache);
+            cache.Clear();
+
+            string result;
+            try
+            {
+                result = await AiExplainer.ExplainAsync(entry);
+            }
+            finally
+            {
+                field.SetValue(null, originalHttp);
+            }
+
+            Assert.False(string.IsNullOrWhiteSpace(result));
+        }
+
+        private class MockBadJsonMessageHandler : HttpMessageHandler
+        {
+            protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                var response = new HttpResponseMessage(HttpStatusCode.InternalServerError)
+                {
+                    Content = new StringContent("{ invalid json content }"),
+                    ReasonPhrase = "Internal Server Error"
+                };
+                return Task.FromResult(response);
+            }
+        }
     }
 }
 // push trigger
