@@ -1,16 +1,33 @@
-// Imported and adapted from my Winslopr app https://github.com/builtbybel/Winslopr/blob/main/docs/extensions.md
-// Jut reused here with namespace changes only.
+// Imported and adapted from Winslopr app https://github.com/builtbybel/Winslopr/
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Text;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace FluentCleaner.Views;
 
-public enum ToolsCategory
+public enum ToolsCategoryType
 {
     All, System, Privacy, Network, Apps, Debloat
+}
+
+public class ToolsCategory
+{
+    public string Name { get; set; } = string.Empty;
+    public string Icon { get; set; } = string.Empty;
+    public ToolsCategoryType Type { get; set; }
+
+    public ToolsCategory(string name, string icon, ToolsCategoryType type)
+    {
+        Name = name;
+        Icon = icon;
+        Type = type;
+    }
 }
 
 public class ToolsDefinition
@@ -21,7 +38,7 @@ public class ToolsDefinition
     public ScriptMeta Meta { get; set; } = new ScriptMeta();
 
     public string Description => Meta?.Description ?? string.Empty;
-    public ToolsCategory Category => Meta?.Category ?? ToolsCategory.All;
+    public ToolsCategoryType Category => Meta?.Category ?? ToolsCategoryType.All;
     public List<string> Options => Meta?.Options ?? new List<string>();
     public bool SupportsInput => Meta?.SupportsInput ?? false;
     public string InputPlaceholder => Meta?.InputPlaceholder ?? string.Empty;
@@ -37,6 +54,7 @@ public class ToolsDefinition
         ScriptPath = scriptPath ?? string.Empty;
         Meta = meta ?? new ScriptMeta();
     }
+
     public ToolsDefinition()
     {
         Title = string.Empty;
@@ -46,12 +64,11 @@ public class ToolsDefinition
     }
 }
 
-
 public record ScriptMeta
 {
     public string Description { get; init; } = "";
     public List<string> Options { get; init; } = new();
-    public ToolsCategory Category { get; init; } = ToolsCategory.All;
+    public ToolsCategoryType Category { get; init; } = ToolsCategoryType.All;
     public bool UseConsole { get; init; } = false;
     public bool UseLog { get; init; } = false;
     public bool SupportsInput { get; init; } = false;
@@ -59,34 +76,35 @@ public record ScriptMeta
     public string PoweredByText { get; init; } = "";
     public string PoweredByUrl { get; init; } = "";
 
-    public ScriptMeta() {}
+    public ScriptMeta() { }
 }
-
 
 public sealed partial class ToolsPage : Page, ISearchablePage
 {
     private readonly List<ToolsDefinition> _allTools = new();
-    private readonly ObservableCollection<ToolsDefinition> _visibleTools = new();
+    private readonly ObservableCollection<ToolsCategory> _categories = new();
     private ToolsDefinition? _selectedTool;
 
-    private ToolsCategory _category = ToolsCategory.All;
+    private ToolsCategoryType _category = ToolsCategoryType.All;
     private string _searchQuery = "";
 
     // Folder name next to the exe that holds .ps1 extension scripts
     private static readonly string ExtensionsDir =
         Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Extensions");
 
-    // GitHub URL where the extension pack can be downloaded
-    private const string ExtensionsGitHub = "https://github.com/marspater/FluentCleaner/releases";
-
     public ToolsPage()
     {
         InitializeComponent();
-        listTools.ItemsSource = _visibleTools;
 
-        foreach (var cat in new[] { "All", "System", "Privacy", "Network", "Apps", "Debloat" })
-            comboFilter.Items.Add(cat);
-        comboFilter.SelectedIndex = 0;
+        _categories.Add(new ToolsCategory("All", "\uE71D", ToolsCategoryType.All));
+        _categories.Add(new ToolsCategory("System", "\uE770", ToolsCategoryType.System));
+        _categories.Add(new ToolsCategory("Privacy", "\uE72E", ToolsCategoryType.Privacy));
+        _categories.Add(new ToolsCategory("Network", "\uE839", ToolsCategoryType.Network));
+        _categories.Add(new ToolsCategory("Apps", "\uE71D", ToolsCategoryType.Apps));
+        _categories.Add(new ToolsCategory("Debloat", "\uE74D", ToolsCategoryType.Debloat));
+
+        listCategories.ItemsSource = _categories;
+        listCategories.SelectedIndex = 0;
 
         ClearDetails();
         LoadToolsAsync();
@@ -106,18 +124,12 @@ public sealed partial class ToolsPage : Page, ISearchablePage
     private async void LoadToolsAsync()
     {
         _allTools.Clear();
-        _visibleTools.Clear();
         ClearDetails();
 
-        // Extensions folder is optional;lets check before showing any status
         if (!Directory.Exists(ExtensionsDir))
         {
-            ShowNoFolder();
             return;
         }
-
-        lblStatus.Text = "Loading...";
-        ShowList();
 
         string[] files = await Task.Run(() => Directory.GetFiles(ExtensionsDir, "*.ps1"));
 
@@ -135,27 +147,17 @@ public sealed partial class ToolsPage : Page, ISearchablePage
 
         _allTools.AddRange(loaded);
         ApplyFilterAndSearch();
-
-        lblStatus.Text = _allTools.Count == 1 ? "1 extension loaded." : $"{_allTools.Count} extensions loaded.";
-
-        if (_visibleTools.Count > 0)
-            listTools.SelectedIndex = 0;
     }
 
     // ---------------- Filter / Search ----------------
 
-    private void comboFilter_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    private void listCategories_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        _category = comboFilter.SelectedItem?.ToString() switch
+        if (listCategories.SelectedItem is ToolsCategory cat)
         {
-            "System"  => ToolsCategory.System,
-            "Privacy" => ToolsCategory.Privacy,
-            "Network" => ToolsCategory.Network,
-            "Apps"    => ToolsCategory.Apps,
-            "Debloat" => ToolsCategory.Debloat,
-            _         => ToolsCategory.All
-        };
-        ApplyFilterAndSearch();
+            _category = cat.Type;
+            ApplyFilterAndSearch();
+        }
     }
 
     private void ApplyFilterAndSearch()
@@ -164,25 +166,22 @@ public sealed partial class ToolsPage : Page, ISearchablePage
 
         var filtered = _allTools
             .Where(t =>
-                (_category == ToolsCategory.All || t.Category == _category) &&
+                (_category == ToolsCategoryType.All || t.Category == _category) &&
                 (string.IsNullOrEmpty(q) ||
                  t.Title.ToLowerInvariant().Contains(q) ||
                  t.Description.ToLowerInvariant().Contains(q)))
             .OrderBy(t => t.Title)
             .ToList();
 
-        _visibleTools.Clear();
-        foreach (var t in filtered)
-            _visibleTools.Add(t);
-
-        if (_visibleTools.Count == 0)
+        if (filtered.Count > 0)
+        {
+            SetTool(filtered[0]);
+        }
+        else
+        {
             ClearDetails();
+        }
     }
-
-    // ---------------- Selection ----------------
-
-    private void listTools_SelectionChanged(object sender, SelectionChangedEventArgs e) =>
-        SetTool(listTools.SelectedItem as ToolsDefinition);
 
     // ---------------- Details panel ----------------
 
@@ -191,9 +190,6 @@ public sealed partial class ToolsPage : Page, ISearchablePage
         _selectedTool = tool;
 
         if (tool is null) { ClearDetails(); return; }
-
-        panelPlaceholder.Visibility = Visibility.Collapsed;
-        scrollDetails.Visibility = Visibility.Visible;
 
         lblIcon.Text = tool.Icon ?? "";
         lblTitle.Text = tool.Title ?? "";
@@ -270,9 +266,6 @@ public sealed partial class ToolsPage : Page, ISearchablePage
 
         btnRun.Visibility = Visibility.Collapsed;
         btnUninstall.Visibility = Visibility.Collapsed;
-
-        scrollDetails.Visibility = Visibility.Collapsed;
-        panelPlaceholder.Visibility = Visibility.Visible;
     }
 
     // ---------------- Button handlers ----------------
@@ -283,15 +276,14 @@ public sealed partial class ToolsPage : Page, ISearchablePage
 
         if (!File.Exists(_selectedTool.ScriptPath))
         {
-            lblStatus.Text = "Script not found: " + _selectedTool.ScriptPath;
+            AppendLog("Script not found: " + _selectedTool.ScriptPath);
             return;
         }
 
         btnRun.IsEnabled = false;
         btnUninstall.IsEnabled = false;
         progressRing.IsActive = true;
-        lblStatus.Text = "Running...";
-        txtLog.Text = "";
+        textLog.Document.SetText(Microsoft.UI.Text.TextSetOptions.None, "");
         AppendLog($"── {_selectedTool.Title} ──");
 
         try
@@ -324,12 +316,10 @@ public sealed partial class ToolsPage : Page, ISearchablePage
             if (!string.IsNullOrWhiteSpace(inputArg)) extraArgs.Add(inputArg);
 
             await RunScriptAsync(_selectedTool.ScriptPath, extraArgs, useConsole, AppendLog);
-
-            lblStatus.Text = useConsole ? "Opened in console." : "Done.";
         }
         catch (Exception ex)
         {
-            lblStatus.Text = "Error: " + ex.Message;
+            AppendLog("Error: " + ex.Message);
         }
         finally
         {
@@ -345,7 +335,6 @@ public sealed partial class ToolsPage : Page, ISearchablePage
 
         if (!File.Exists(_selectedTool.ScriptPath))
         {
-            lblStatus.Text = "File already missing.";
             ClearDetails();
             LoadToolsAsync();
             return;
@@ -370,44 +359,17 @@ public sealed partial class ToolsPage : Page, ISearchablePage
         }
         catch (Exception ex)
         {
-            lblStatus.Text = "Could not delete: " + ex.Message;
+            AppendLog("Could not delete: " + ex.Message);
         }
     }
 
     private void btnOpenFolder_Click(object sender, RoutedEventArgs e)
     {
-        // Open the Extensions folder if it exists, otherwise open the app folder
         var target = Directory.Exists(ExtensionsDir)
             ? ExtensionsDir
             : AppDomain.CurrentDomain.BaseDirectory;
         try { Process.Start("explorer.exe", target); }
         catch (Exception ex) { Debug.WriteLine($"Failed to open folder: {ex.Message}"); }
-    }
-
-    private void btnGitHub_Click(object sender, RoutedEventArgs e)
-    {
-        try { Process.Start(new ProcessStartInfo(ExtensionsGitHub) { UseShellExecute = true }); }
-        catch (Exception ex) { Debug.WriteLine($"Failed to open GitHub link: {ex.Message}"); }
-    }
-
-    // ---------------- Empty state helpers ----------------
-
-    private void ShowNoFolder()
-    {
-        panelNoFolder.Visibility   = Visibility.Visible;
-        panelPlaceholder.Visibility = Visibility.Collapsed;  // don't show both at once
-        listTools.Visibility       = Visibility.Collapsed;
-        borderOutput.Visibility    = Visibility.Collapsed;
-        comboFilter.Visibility      = Visibility.Collapsed;
-        lblStatus.Text             = "";
-    }
-
-    private void ShowList()
-    {
-        panelNoFolder.Visibility = Visibility.Collapsed;
-        listTools.Visibility = Visibility.Visible;
-
-        borderOutput.Visibility = Visibility.Visible;
     }
 
     private async void btnShowHelp_Click(object sender, RoutedEventArgs e)
@@ -417,13 +379,13 @@ public sealed partial class ToolsPage : Page, ISearchablePage
             .FirstOrDefault(o => o.Contains("help", StringComparison.OrdinalIgnoreCase));
         if (helpOpt is null) return;
 
-        txtLog.Text = "";
+        textLog.Document.SetText(Microsoft.UI.Text.TextSetOptions.None, "");
         AppendLog($"── {_selectedTool.Title} — Help ──");
         await RunScriptAsync(_selectedTool.ScriptPath, new[] { helpOpt }, false, AppendLog);
     }
 
     private void btnClearLog_Click(object sender, RoutedEventArgs e) =>
-        txtLog.Text = "";
+        textLog.Document.SetText(Microsoft.UI.Text.TextSetOptions.None, "");
 
     private void linkPoweredBy_Click(object sender, RoutedEventArgs e)
     {
@@ -438,14 +400,12 @@ public sealed partial class ToolsPage : Page, ISearchablePage
     private void AppendLog(string line) =>
         DispatcherQueue.TryEnqueue(() =>
         {
-            txtLog.Text += line + "\n";
-            txtLog.SelectionStart = txtLog.Text.Length;
+            textLog.Document.GetText(Microsoft.UI.Text.TextGetOptions.None, out string currentText);
+            textLog.Document.SetText(Microsoft.UI.Text.TextSetOptions.None, currentText + line + "\n");
         });
 
     // ---------------- Script execution ----------------
 
-    // onOutput is called live for every stdout/stderr line.
-    // Pass AppendLog to stream output into the log panel.
     private static Task RunScriptAsync(string scriptPath, IEnumerable<string> extraArgs, bool useConsole,
                                        Action<string>? onOutput = null) =>
         Task.Run(() =>
@@ -496,7 +456,7 @@ public sealed partial class ToolsPage : Page, ISearchablePage
     {
         string description = "No description available.";
         var options = new List<string>();
-        var category = ToolsCategory.All;
+        var category = ToolsCategoryType.All;
         bool useConsole = false, useLog = false, inputEnabled = false;
         string inputPh = "", poweredByText = "", poweredByUrl = "";
 
@@ -511,12 +471,12 @@ public sealed partial class ToolsPage : Page, ISearchablePage
                 else if (line.StartsWith("# Category:", StringComparison.OrdinalIgnoreCase))
                     category = line[11..].Trim().ToLowerInvariant() switch
                     {
-                        "system" => ToolsCategory.System,
-                        "privacy" => ToolsCategory.Privacy,
-                        "network" => ToolsCategory.Network,
-                        "apps" => ToolsCategory.Apps,
-                        "debloat" => ToolsCategory.Debloat,
-                        _ => ToolsCategory.All
+                        "system" => ToolsCategoryType.System,
+                        "privacy" => ToolsCategoryType.Privacy,
+                        "network" => ToolsCategoryType.Network,
+                        "apps" => ToolsCategoryType.Apps,
+                        "debloat" => ToolsCategoryType.Debloat,
+                        _ => ToolsCategoryType.All
                     };
                 else if (line.StartsWith("# Options:", StringComparison.OrdinalIgnoreCase))
                     options = line[10..].Split(';').Select(x => x.Trim()).Where(x => x.Length > 0).ToList();
@@ -554,7 +514,6 @@ public sealed partial class ToolsPage : Page, ISearchablePage
         };
     }
 
-    // Maps keywords in script names to emoji icons
     private static readonly Dictionary<string, string> _iconMap = new()
     {
         ["debloat"] = "🧹",
