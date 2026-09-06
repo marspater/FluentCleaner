@@ -80,18 +80,25 @@ public class CliExtensionsModule
                 : Path.GetFileNameWithoutExtension(script);
             output.Add($"  Running {display}...");
 
-            var extra    = optionArg is not null ? $" \"{optionArg.Replace("\"", "\\\"")}\"" : "";
             var progress = new Progress<string>(line => output.Add("  " + line));
             await Task.Run(() =>
             {
-                var psi = new ProcessStartInfo(SecurityGuard.GetSafePowerShellPath(),
-                    $"-NoProfile -ExecutionPolicy Bypass -File \"{script}\"{extra}")
+                var psi = new ProcessStartInfo(SecurityGuard.GetSafePowerShellPath())
                 {
                     RedirectStandardOutput = true,
                     RedirectStandardError  = true,
                     UseShellExecute        = false,
                     CreateNoWindow         = true
                 };
+                psi.ArgumentList.Add("-NoProfile");
+                psi.ArgumentList.Add("-ExecutionPolicy");
+                psi.ArgumentList.Add("Bypass");
+                psi.ArgumentList.Add("-File");
+                psi.ArgumentList.Add(script);
+                if (optionArg is not null)
+                {
+                    psi.ArgumentList.Add(optionArg);
+                }
                 using var p = new Process { StartInfo = psi };
                 p.OutputDataReceived += (_, ev) => { if (ev.Data is not null) ((IProgress<string>)progress).Report(ev.Data); };
                 p.ErrorDataReceived  += (_, ev) => { if (ev.Data is not null) ((IProgress<string>)progress).Report("ERR: " + ev.Data); };
