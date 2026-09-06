@@ -69,7 +69,7 @@ public class DeveloperCleanupViewModelTests
 
             await scanTask;
 
-            Assert.Equal("Operation cancelled.", vm.StatusText);
+            Assert.Equal("Scan cancelled.", vm.StatusText);
         }
         finally
         {
