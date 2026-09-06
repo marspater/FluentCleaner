@@ -72,7 +72,11 @@ public partial class App : Application
             var logFile = System.IO.Path.Combine(dir, "app_error.log");
             System.IO.File.AppendAllText(logFile, $"[{DateTime.Now}] {source}: {ex}\nMessage: {ex?.Message}\n{ex?.StackTrace}\n---\n");
         }
-        catch { }
+        catch (Exception logEx)
+        {
+            System.Diagnostics.Debug.WriteLine($"[App.LogException] Failed to write app_error.log: {logEx.Message}");
+            Program.LogDiag($"[App.LogException] Failed to write app_error.log: {logEx.Message}");
+        }
     }
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
