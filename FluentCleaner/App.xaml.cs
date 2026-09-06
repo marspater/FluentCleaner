@@ -9,18 +9,22 @@ namespace FluentCleaner;
 
 public partial class App : Application
 {
+    private bool _isWindowActivated;
     public MainWindow? MainWindow { get; private set; }
 
     public App()
     {
         AppDomain.CurrentDomain.UnhandledException += (s, e) =>
         {
-            LogException("AppDomain.UnhandledException", e.ExceptionObject as Exception);
+            var ex = e.ExceptionObject as Exception;
+            LogException("AppDomain.UnhandledException", ex);
+            Program.LogDiag($"[AppDomain-FATAL] {ex}");
         };
 
         TaskScheduler.UnobservedTaskException += (s, e) =>
         {
             LogException("TaskScheduler.UnobservedTaskException", e.Exception);
+            Program.LogDiag($"[TaskScheduler-ERROR] {e.Exception}");
             e.SetObserved();
         };
 
@@ -30,15 +34,30 @@ public partial class App : Application
             if (!string.IsNullOrWhiteSpace(lang))
                 Microsoft.Windows.Globalization.ApplicationLanguages.PrimaryLanguageOverride = lang;
         }
-        catch { }
+        catch (Exception langEx)
+        {
+            Program.LogDiag($"[STARTUP-WARN] PrimaryLanguageOverride failed: {langEx.Message}");
+        }
 
         InitializeComponent();
 
         UnhandledException += (_, e) =>
         {
-            e.Handled = true; // prevent silent 0xC000027B process termination
             LogException("Application.UnhandledException", e.Exception);
+            Program.LogDiag($"[Application.UnhandledException] (WindowActivated={_isWindowActivated}) {e.Exception}");
             System.Diagnostics.Debug.WriteLine($"[UnhandledException] {e.Exception}");
+
+            // CRITICAL: Do NOT mark fatal startup exceptions as handled if window has not activated!
+            // Marking e.Handled = true before window activation creates a headless zombie process.
+            if (_isWindowActivated)
+            {
+                e.Handled = true;
+            }
+            else
+            {
+                Program.LogDiag("[FATAL-STARTUP] Unhandled exception occurred before MainWindow activation. Failing fast to prevent zombie process.");
+                e.Handled = false;
+            }
         };
     }
 
@@ -46,7 +65,11 @@ public partial class App : Application
     {
         try
         {
-            var logFile = System.IO.Path.Combine(AppContext.BaseDirectory, "app_error.log");
+            var dir = AppSettings.IsPortable
+                ? AppContext.BaseDirectory
+                : System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "FluentCleaner");
+            System.IO.Directory.CreateDirectory(dir);
+            var logFile = System.IO.Path.Combine(dir, "app_error.log");
             System.IO.File.AppendAllText(logFile, $"[{DateTime.Now}] {source}: {ex}\nMessage: {ex?.Message}\n{ex?.StackTrace}\n---\n");
         }
         catch { }
@@ -56,9 +79,27 @@ public partial class App : Application
     {
         try
         {
-            AppSettings.Reload();
+            Program.LogDiag("[BOOT] OnLaunched entered.");
 
-            ResourceService.SetLanguage(AppSettings.Instance.Language);
+            try
+            {
+                AppSettings.Reload();
+                Program.LogDiag("[BOOT] AppSettings reloaded.");
+            }
+            catch (Exception ex)
+            {
+                Program.LogDiag($"[BOOT-WARN] AppSettings.Reload failed: {ex.Message}");
+            }
+
+            try
+            {
+                ResourceService.SetLanguage(AppSettings.Instance.Language);
+                Program.LogDiag("[BOOT] Language configured.");
+            }
+            catch (Exception ex)
+            {
+                Program.LogDiag($"[BOOT-WARN] ResourceService.SetLanguage failed: {ex.Message}");
+            }
 
             var cmdArgs = Environment.GetCommandLineArgs();
             bool isAuto     = cmdArgs.Any(a => a.Equals("/AUTO",     StringComparison.OrdinalIgnoreCase));
@@ -66,16 +107,60 @@ public partial class App : Application
 
             if (isAuto)
             {
+                Program.LogDiag("[BOOT] Running in /AUTO silent mode.");
                 _ = SilentRunner.RunAsync(isShutdown);
                 return;
             }
 
+            Program.LogDiag("[BOOT] Creating MainWindow...");
             MainWindow = new MainWindow();
-            SetupTitleBar();
-            RestoreWindowSize();
-            ApplyBackdrop(AppSettings.Instance.Backdrop);
-            ApplyTheme(AppSettings.Instance.Theme);
+            Program.LogDiag("[BOOT] MainWindow instantiated.");
+
+            // Safe application of window decorations (cosmetic failures must never block window activation)
+            try
+            {
+                SetupTitleBar();
+                Program.LogDiag("[BOOT] TitleBar configured.");
+            }
+            catch (Exception ex)
+            {
+                Program.LogDiag($"[BOOT-WARN] SetupTitleBar failed: {ex.Message}");
+            }
+
+            try
+            {
+                RestoreWindowSize();
+                Program.LogDiag("[BOOT] Window size restored.");
+            }
+            catch (Exception ex)
+            {
+                Program.LogDiag($"[BOOT-WARN] RestoreWindowSize failed: {ex.Message}");
+            }
+
+            try
+            {
+                ApplyBackdrop(AppSettings.Instance.Backdrop);
+                Program.LogDiag("[BOOT] Backdrop applied.");
+            }
+            catch (Exception ex)
+            {
+                Program.LogDiag($"[BOOT-WARN] ApplyBackdrop failed: {ex.Message}");
+            }
+
+            try
+            {
+                ApplyTheme(AppSettings.Instance.Theme);
+                Program.LogDiag("[BOOT] Theme applied.");
+            }
+            catch (Exception ex)
+            {
+                Program.LogDiag($"[BOOT-WARN] ApplyTheme failed: {ex.Message}");
+            }
+
+            Program.LogDiag("[BOOT] Calling MainWindow.Activate()...");
             MainWindow.Activate();
+            _isWindowActivated = true;
+            Program.LogDiag("[BOOT] MainWindow ACTIVATED successfully. UI is live.");
 
             MainWindow.Closed += (_, _) =>
             {
@@ -90,6 +175,7 @@ public partial class App : Application
         }
         catch (Exception ex)
         {
+            Program.LogDiag($"[BOOT-FATAL] Fatal exception in OnLaunched: {ex}\n{ex.StackTrace}");
             LogException("OnLaunched", ex);
             throw;
         }

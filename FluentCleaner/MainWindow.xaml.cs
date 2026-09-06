@@ -13,22 +13,50 @@ public sealed partial class MainWindow : Window
 
     public MainWindow()
     {
+        Program.LogDiag("[BOOT-WINDOW] MainWindow constructor started.");
         InitializeComponent();
-        ExtendsContentIntoTitleBar = true;
-        SetTitleBar(AppTitleBar);
-        AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
+        Program.LogDiag("[BOOT-WINDOW] InitializeComponent completed.");
 
-        // Navigate to CleanerPage on startup
-        if (NavView.MenuItems.Count > 0)
+        try
         {
-            NavView.SelectedItem = NavView.MenuItems[0];
-            if (NavFrame.Content is null)
-                NavFrame.Navigate(typeof(CleanerPage), null, new SuppressNavigationTransitionInfo());
+            ExtendsContentIntoTitleBar = true;
+            SetTitleBar(AppTitleBar);
+            AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
+            Program.LogDiag("[BOOT-WINDOW] TitleBar customized.");
+        }
+        catch (Exception ex)
+        {
+            Program.LogDiag($"[BOOT-WINDOW-WARN] TitleBar customization issue: {ex.Message}");
         }
 
-        SyncSearchState();                           // enable/disable search for initial page
-        SizeChanged += MainWindow_SizeChanged;       // watch for window resize; compact search
-        UpdateTitleSearch(AppWindow.Size.Width);     // apply correct search mode on first load
+        // Navigate to initial CleanerPage on NavView.Loaded so MainWindow completes construction and activates immediately
+        NavView.Loaded += (_, _) =>
+        {
+            try
+            {
+                if (NavFrame.Content is null && NavView.MenuItems.Count > 0)
+                {
+                    Program.LogDiag("[BOOT-WINDOW] NavView loaded. Navigating to initial CleanerPage...");
+                    NavView.SelectedItem = NavView.MenuItems[0];
+                    NavFrame.Navigate(typeof(CleanerPage), null, new SuppressNavigationTransitionInfo());
+                    SyncSearchState();
+                    Program.LogDiag("[BOOT-WINDOW] Initial navigation to CleanerPage completed.");
+                }
+            }
+            catch (Exception navEx)
+            {
+                Program.LogDiag($"[BOOT-WINDOW-ERROR] Initial navigation failed: {navEx}");
+            }
+        };
+
+        SizeChanged += MainWindow_SizeChanged;
+        try
+        {
+            UpdateTitleSearch(AppWindow.Size.Width);
+        }
+        catch { }
+
+        Program.LogDiag("[BOOT-WINDOW] MainWindow constructor completed.");
     }
 
     // --- TitleBar pane toggle -------------------------------------------------

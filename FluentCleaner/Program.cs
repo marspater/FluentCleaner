@@ -49,7 +49,7 @@ public static class Program
         }
     }
 
-    private static void LogDiag(string message)
+    internal static void LogDiag(string message)
     {
         try
         {
