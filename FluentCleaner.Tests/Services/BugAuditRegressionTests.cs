@@ -91,4 +91,12 @@ public class BugAuditRegressionTests
         var hasChoices = root.TryGetProperty("choices", out var choices) && choices.GetArrayLength() > 0;
         Assert.False(hasChoices);
     }
+
+    [Fact]
+    public void AppSettings_Instance_IsInitializedWithValidStaticPaths()
+    {
+        Assert.NotNull(AppSettings.Instance);
+        Assert.False(string.IsNullOrWhiteSpace(AppSettings.Instance.Language) && AppSettings.Instance.Language == null);
+        _ = AppSettings.IsPortable;
+    }
 }

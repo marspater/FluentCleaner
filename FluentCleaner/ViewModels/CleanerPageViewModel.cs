@@ -129,7 +129,7 @@ public partial class CleanerPageViewModel : ObservableObject
         // Deduplicate entries that appear in multiple databases (by name)
         allEntries = allEntries.DistinctBy(e => e.Name, StringComparer.OrdinalIgnoreCase).ToList();
 
-        _loadedEntries = await Task.Run(() => allEntries.Where(_detection.IsInstalled).ToList());
+        _loadedEntries = await Task.Run(() => allEntries.AsParallel().Where(_detection.IsInstalled).ToList());
 
         // Layer the user's custom entries on top (skip IsInstalled)
         _loadedEntries.RemoveAll(e => e.IsCustom);
