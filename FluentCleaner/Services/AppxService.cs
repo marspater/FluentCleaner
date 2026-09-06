@@ -53,9 +53,51 @@ public static class AppxService
     public static async Task<List<AppxEntry>> ScanInstalledAsync(IEnumerable<AppxEntry> entries)
     {
         var installed = await GetInstalledNamesAsync();
-        return entries
-            .Where(e => installed.Any(n => n.Contains(e.PackageName, StringComparison.OrdinalIgnoreCase)))
-            .ToList();
+        return FilterInstalled(entries, installed);
+    }
+
+    // Pure matching logic extracted for fast execution and unit testing.
+    public static List<AppxEntry> FilterInstalled(IEnumerable<AppxEntry> entries, List<string> installed)
+    {
+        if (installed.Count == 0) return [];
+
+        var installedSet = new HashSet<string>(installed, StringComparer.OrdinalIgnoreCase);
+
+        string? joined = null;
+        ReadOnlySpan<char> joinedSpan = default;
+
+        var result = new List<AppxEntry>();
+
+        foreach (var e in entries)
+        {
+            string pkg = e.PackageName;
+            if (string.IsNullOrEmpty(pkg))
+            {
+                result.Add(e);
+                continue;
+            }
+
+            // O(1) fast path for exact package name matches
+            if (installedSet.Contains(pkg))
+            {
+                result.Add(e);
+                continue;
+            }
+
+            // Lazy creation of null-delimited single string span for fast SIMD substring search
+            if (joined == null)
+            {
+                joined = string.Join('\0', installed);
+                joinedSpan = joined.AsSpan();
+            }
+
+            if (joinedSpan.Contains(pkg.AsSpan(), StringComparison.OrdinalIgnoreCase))
+            {
+                result.Add(e);
+            }
+        }
+
+        return result;
     }
 
     // All package Names (not FullName) currently installed for the current user.
