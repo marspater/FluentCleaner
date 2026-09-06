@@ -10,7 +10,19 @@ Target:
 - WinUI 3 / Windows App SDK
 - x64 and arm64
 
-The Jules execution environment may be Linux-based and therefore cannot run or visually validate the WinUI desktop application.
+## Jules Environment
+
+This repository is a Windows-native WinUI 3 application.
+
+The Jules environment may run on Linux. When restoring the solution there, use:
+
+`dotnet restore FluentCleaner.slnx -p:EnableWindowsTargeting=true`
+
+Do not modify the project files solely to accommodate the Linux Jules environment.
+
+Jules must not claim that the WinUI desktop UI was runtime-tested unless the application was actually executed on Windows.
+
+GitHub Actions on windows-latest is the authoritative build environment.
 
 ## Validation hierarchy
 
@@ -23,8 +35,11 @@ The Jules execution environment may be Linux-based and therefore cannot run or v
 
 ## Commands
 
-Preferred restore:
+Preferred restore (Windows):
 `dotnet restore FluentCleaner.slnx`
+
+Linux / Jules restore:
+`dotnet restore FluentCleaner.slnx -p:EnableWindowsTargeting=true`
 
 Tests:
 `dotnet test FluentCleaner.slnx --configuration Release -p:Platform=x64`
