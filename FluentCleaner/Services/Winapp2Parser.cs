@@ -69,9 +69,10 @@ public class Winapp2Parser
             // Fast Span-based key matching replacing Regex.IsMatch allocations & CPU overhead
             else if (IsKey(key, "Detect"))          current.DetectKeys.Add(value.ToString());
             else if (IsKey(key, "DetectFile"))      current.DetectFiles.Add(value.ToString());
-            else if (IsKeyWithDigits(key, "FileKey"))    current.FileKeys.Add(FileKeyEntry.Parse(value.ToString()));
-            else if (IsKeyWithDigits(key, "RegKey"))     current.RegKeys.Add(RegKeyEntry.Parse(value.ToString()));
-            else if (IsKeyWithDigits(key, "ExcludeKey")) current.ExcludeKeys.Add(ExcludeKeyEntry.Parse(value.ToString()));
+            // Performance optimization: pass ReadOnlySpan<char> directly to entry parsers without value.ToString() string allocations
+            else if (IsKeyWithDigits(key, "FileKey"))    current.FileKeys.Add(FileKeyEntry.Parse(value));
+            else if (IsKeyWithDigits(key, "RegKey"))     current.RegKeys.Add(RegKeyEntry.Parse(value));
+            else if (IsKeyWithDigits(key, "ExcludeKey")) current.ExcludeKeys.Add(ExcludeKeyEntry.Parse(value));
         }
 
         if (current is not null && IsValid(current)) entries.Add(current);

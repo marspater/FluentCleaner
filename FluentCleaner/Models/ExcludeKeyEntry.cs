@@ -24,29 +24,46 @@ public class ExcludeKeyEntry
        When null, the entire directory is excluded (PATH-style behaviour). */
     public string? Pattern { get; set; }
 
-    public static ExcludeKeyEntry Parse(string value)
-    {
-        var parts = value.Split('|');
-        var entry = new ExcludeKeyEntry();
+    public static ExcludeKeyEntry Parse(string value) => Parse(value.AsSpan());
 
-        if (parts.Length > 0)
+    // Performance optimization: Span-based parsing avoids string.Split('|') array allocations
+    // and intermediate substring allocations when parsing ExcludeKey lines.
+    public static ExcludeKeyEntry Parse(ReadOnlySpan<char> value)
+    {
+        var entry = new ExcludeKeyEntry();
+        var firstPipe = value.IndexOf('|');
+
+        if (firstPipe < 0)
         {
-            entry.Type = parts[0].Trim().ToUpperInvariant() switch
-            {
-                "FILE" => ExcludeType.File,
-                "PATH" => ExcludeType.Path,
-                "REG"  => ExcludeType.Reg,
-                _      => ExcludeType.File
-            };
+            entry.Type = ParseType(value.Trim());
+            return entry;
         }
-        if (parts.Length > 1) entry.Path = parts[1].Trim();
-        if (parts.Length > 2)
+
+        entry.Type = ParseType(value[..firstPipe].Trim());
+
+        var remainder = value[(firstPipe + 1)..];
+        var secondPipe = remainder.IndexOf('|');
+
+        if (secondPipe < 0)
         {
-            var pattern = parts[2].Trim();
-            if (!string.IsNullOrWhiteSpace(pattern))
-                entry.Pattern = pattern;
+            entry.Path = remainder.Trim().ToString();
+        }
+        else
+        {
+            entry.Path = remainder[..secondPipe].Trim().ToString();
+            var pattern = remainder[(secondPipe + 1)..].Trim();
+            if (!pattern.IsEmpty)
+                entry.Pattern = pattern.ToString();
         }
 
         return entry;
+    }
+
+    private static ExcludeType ParseType(ReadOnlySpan<char> typeSpan)
+    {
+        if (typeSpan.Equals("FILE", StringComparison.OrdinalIgnoreCase)) return ExcludeType.File;
+        if (typeSpan.Equals("PATH", StringComparison.OrdinalIgnoreCase)) return ExcludeType.Path;
+        if (typeSpan.Equals("REG", StringComparison.OrdinalIgnoreCase)) return ExcludeType.Reg;
+        return ExcludeType.File;
     }
 }
