@@ -99,4 +99,33 @@ public class BugAuditRegressionTests
         Assert.False(string.IsNullOrWhiteSpace(AppSettings.Instance.Language) && AppSettings.Instance.Language == null);
         _ = AppSettings.IsPortable;
     }
+
+    [Fact]
+    public void ProcessStartInfo_ArgumentList_PreventsCommandInjectionInPathsAndArgs()
+    {
+        var scriptPath = @"C:\Extensions\a""; calc.exe; #.ps1";
+        var optionArg = @"option""; calc.exe; #";
+
+        var psi = new System.Diagnostics.ProcessStartInfo("powershell.exe")
+        {
+            UseShellExecute = false
+        };
+        psi.ArgumentList.Add("-NoProfile");
+        psi.ArgumentList.Add("-ExecutionPolicy");
+        psi.ArgumentList.Add("Bypass");
+        psi.ArgumentList.Add("-File");
+        psi.ArgumentList.Add(scriptPath);
+        if (optionArg is not null)
+        {
+            psi.ArgumentList.Add(optionArg);
+        }
+
+        Assert.Equal(6, psi.ArgumentList.Count);
+        Assert.Equal("-NoProfile", psi.ArgumentList[0]);
+        Assert.Equal("-ExecutionPolicy", psi.ArgumentList[1]);
+        Assert.Equal("Bypass", psi.ArgumentList[2]);
+        Assert.Equal("-File", psi.ArgumentList[3]);
+        Assert.Equal(scriptPath, psi.ArgumentList[4]);
+        Assert.Equal(optionArg, psi.ArgumentList[5]);
+    }
 }
