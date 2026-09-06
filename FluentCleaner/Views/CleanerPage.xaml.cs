@@ -289,4 +289,16 @@ public sealed partial class CleanerPage : Page, ISearchablePage, IPageActions
             foreach (var btn in g.Children.OfType<Button>())
                 btn.Opacity = opacity;
     }
+
+    private void MenuButton_GotFocus(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn)
+            btn.Opacity = 1;
+    }
+
+    private void MenuButton_LostFocus(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn)
+            btn.Opacity = 0;
+    }
 }

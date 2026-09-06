@@ -47,12 +47,14 @@
                                           SelectedItem="{x:Bind ViewModel.RootPath, Mode=TwoWay}"
                                           IsEnabled="{x:Bind ViewModel.IsNotBusy, Mode=OneWay}"
                                           PlaceholderText="Drives"
+                                          AutomationProperties.Name="Target drive"
                                           MinWidth="100" />
                                 
                                 <TextBox Grid.Column="1"
                                          PlaceholderText="Path to analyze (e.g. C:\Users or select drive)"
                                          Text="{x:Bind ViewModel.RootPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                          IsEnabled="{x:Bind ViewModel.IsNotBusy, Mode=OneWay}"
+                                         AutomationProperties.Name="Path to analyze"
                                          FontSize="12" />
                                          
                                 <Button Grid.Column="2" Content="Browse…"
