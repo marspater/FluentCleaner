@@ -234,9 +234,9 @@ public partial class DeveloperCleanupViewModel : ObservableObject
                         }
                     }
                     catch (OperationCanceledException) { throw; }
-                    catch (Exception)
+                    catch (Exception ex) when (ex is UnauthorizedAccessException or DirectoryNotFoundException or IOException or System.Security.SecurityException)
                     {
-                        // Skip if locked or access denied
+                        System.Diagnostics.Debug.WriteLine($"[DeveloperCleanupViewModel.NukeAsync] Skipping {item.Path}: {ex.Message}");
                     }
                 }
             }, token);
@@ -284,10 +284,18 @@ public partial class DeveloperCleanupViewModel : ObservableObject
                     if (file.IsReadOnly)
                         file.IsReadOnly = false;
                 }
-                catch { }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception ex) when (ex is UnauthorizedAccessException or IOException or System.Security.SecurityException)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[DeveloperCleanupViewModel.DeleteDirectoryRecursiveSafe] Failed to clear read-only attribute on {file.FullName}: {ex.Message}");
+                }
             }
         }
-        catch { }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or DirectoryNotFoundException or IOException or System.Security.SecurityException)
+        {
+            System.Diagnostics.Debug.WriteLine($"[DeveloperCleanupViewModel.DeleteDirectoryRecursiveSafe] Error enumerating files in {path}: {ex.Message}");
+        }
 
         di.Delete(true);
     }
@@ -308,7 +316,12 @@ public partial class DeveloperCleanupViewModel : ObservableObject
                     if ((File.GetAttributes(dir) & FileAttributes.ReparsePoint) != 0)
                         continue;
                 }
-                catch { continue; }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception ex) when (ex is UnauthorizedAccessException or DirectoryNotFoundException or IOException or System.Security.SecurityException)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[DeveloperCleanupViewModel.ScanDirectory] Error reading attributes for {dir}: {ex.Message}");
+                    continue;
+                }
 
                 var name = Path.GetFileName(dir);
                 
@@ -334,9 +347,11 @@ public partial class DeveloperCleanupViewModel : ObservableObject
                 }
             }
         }
-        catch (UnauthorizedAccessException) { }
-        catch (DirectoryNotFoundException) { }
-        catch (Exception) { }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or DirectoryNotFoundException or IOException or System.Security.SecurityException)
+        {
+            System.Diagnostics.Debug.WriteLine($"[DeveloperCleanupViewModel.ScanDirectory] Error enumerating directories in {path}: {ex.Message}");
+        }
     }
 
     private async Task CalculateSizesAsync(CancellationToken token)
@@ -358,8 +373,9 @@ public partial class DeveloperCleanupViewModel : ObservableObject
                 item.SizeText = "Cancelled";
                 break;
             }
-            catch
+            catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine($"[DeveloperCleanupViewModel.CalculateSizesAsync] Error calculating size for {item.Path}: {ex.Message}");
                 item.SizeText = "Unknown";
             }
         }
@@ -376,7 +392,15 @@ public partial class DeveloperCleanupViewModel : ObservableObject
             foreach (var fi in di.EnumerateFiles())
             {
                 token.ThrowIfCancellationRequested();
-                try { size += fi.Length; } catch { }
+                try
+                {
+                    size += fi.Length;
+                }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception ex) when (ex is UnauthorizedAccessException or DirectoryNotFoundException or IOException or System.Security.SecurityException)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[DeveloperCleanupViewModel.CalculateDirectorySize] Error getting length for file {fi.FullName}: {ex.Message}");
+                }
             }
 
             foreach (var sub in di.EnumerateDirectories())
@@ -386,7 +410,11 @@ public partial class DeveloperCleanupViewModel : ObservableObject
                 size += CalculateDirectorySize(sub.FullName, token);
             }
         }
-        catch { }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or DirectoryNotFoundException or IOException or System.Security.SecurityException)
+        {
+            System.Diagnostics.Debug.WriteLine($"[DeveloperCleanupViewModel.CalculateDirectorySize] Error enumerating directory {path}: {ex.Message}");
+        }
         return size;
     }
 }
