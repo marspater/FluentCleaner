@@ -40,9 +40,9 @@ public sealed partial class SettingsPage : Page, IPageActions
 
     private async void LangCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (!_pageReady) return;
+        if (!_pageReady || XamlRoot is null) return;
 
-        var result = await new ContentDialog
+        var dialog = new ContentDialog
         {
             XamlRoot          = XamlRoot,
             RequestedTheme    = ActualTheme,
@@ -51,7 +51,9 @@ public sealed partial class SettingsPage : Page, IPageActions
             PrimaryButtonText = ResourceService.Get("DlgRestartNow"),
             CloseButtonText   = ResourceService.Get("DlgRestartLater"),
             DefaultButton     = ContentDialogButton.Primary
-        }.ShowAsync();
+        };
+
+        var result = await DialogHelper.ShowSafeAsync(dialog);
 
         if (result == ContentDialogResult.Primary)
         {
@@ -126,6 +128,8 @@ public sealed partial class SettingsPage : Page, IPageActions
         AppSettings.Instance.GroqApiKey =
             string.IsNullOrWhiteSpace(ApiKeyBox.Password) ? null : ApiKeyBox.Password.Trim();
         AppSettings.Instance.Save();
+        lblApiTestResult.Text = "✓ Saved";
+        lblApiTestResult.Visibility = Visibility.Visible;
     }
 
     // quick sanity-check
@@ -143,32 +147,39 @@ public sealed partial class SettingsPage : Page, IPageActions
 
     private async void BrowseButton_Click(object sender, RoutedEventArgs e)
     {
-        var picker = new FileOpenPicker { SuggestedStartLocation = PickerLocationId.Downloads };
-        picker.FileTypeFilter.Add(".ini");
+        try
+        {
+            var picker = new FileOpenPicker { SuggestedStartLocation = PickerLocationId.Downloads };
+            picker.FileTypeFilter.Add(".ini");
 
-        var hwnd = WindowNative.GetWindowHandle((Application.Current as App)?.MainWindow);
-        InitializeWithWindow.Initialize(picker, hwnd);
+            var hwnd = WindowNative.GetWindowHandle((Application.Current as App)?.MainWindow);
+            InitializeWithWindow.Initialize(picker, hwnd);
 
-        var file = await picker.PickSingleFileAsync();
-        if (file is not null)
-            ViewModel.CustomPath = file.Path;
+            var file = await picker.PickSingleFileAsync();
+            if (file is not null)
+                ViewModel.CustomPath = file.Path;
+        }
+        catch (Exception ex)
+        {
+            ViewModel.StatusText = $"File picker error: {ex.Message}";
+        }
     }
 
     // --- Export / Import settings -----------------------------------------
 
     private async void ExportSettings_Click(object sender, RoutedEventArgs e)
     {
-        var picker = new FileSavePicker { SuggestedStartLocation = PickerLocationId.Desktop, SuggestedFileName = "settings" };
-        picker.FileTypeChoices.Add("JSON", [".json"]);
-
-        var hwnd = WindowNative.GetWindowHandle((Application.Current as App)?.MainWindow);
-        InitializeWithWindow.Initialize(picker, hwnd);
-
-        var file = await picker.PickSaveFileAsync();
-        if (file is null) return;
-
         try
         {
+            var picker = new FileSavePicker { SuggestedStartLocation = PickerLocationId.Desktop, SuggestedFileName = "settings" };
+            picker.FileTypeChoices.Add("JSON", [".json"]);
+
+            var hwnd = WindowNative.GetWindowHandle((Application.Current as App)?.MainWindow);
+            InitializeWithWindow.Initialize(picker, hwnd);
+
+            var file = await picker.PickSaveFileAsync();
+            if (file is null) return;
+
             AppSettings.ExportTo(file.Path);
             ViewModel.StatusText = ResourceService.Fmt("St_ExportSuccess", file.Name);
         }
@@ -177,17 +188,17 @@ public sealed partial class SettingsPage : Page, IPageActions
 
     private async void ImportSettings_Click(object sender, RoutedEventArgs e)
     {
-        var picker = new FileOpenPicker { SuggestedStartLocation = PickerLocationId.Desktop };
-        picker.FileTypeFilter.Add(".json");
-
-        var hwnd = WindowNative.GetWindowHandle((Application.Current as App)?.MainWindow);
-        InitializeWithWindow.Initialize(picker, hwnd);
-
-        var file = await picker.PickSingleFileAsync();
-        if (file is null) return;
-
         try
         {
+            var picker = new FileOpenPicker { SuggestedStartLocation = PickerLocationId.Desktop };
+            picker.FileTypeFilter.Add(".json");
+
+            var hwnd = WindowNative.GetWindowHandle((Application.Current as App)?.MainWindow);
+            InitializeWithWindow.Initialize(picker, hwnd);
+
+            var file = await picker.PickSingleFileAsync();
+            if (file is null) return;
+
             AppSettings.ImportFrom(file.Path);
             ViewModel.Refresh();
             ViewModel.StatusText = ResourceService.Fmt("St_ImportSuccess", file.Name);

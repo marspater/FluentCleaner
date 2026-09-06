@@ -21,17 +21,17 @@
                      Visibility="{x:Bind ViewModel.IsBusy, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}" />
 
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-            <StackPanel Margin="32,26,32,32" Spacing="22" HorizontalAlignment="Stretch">
+            <StackPanel Margin="{StaticResource FC_PagePadding}" Spacing="{StaticResource FC_SectionSpacing}" HorizontalAlignment="Stretch">
                 
-                <TextBlock Text="Disk Space Analyzer" Style="{StaticResource TitleTextBlockStyle}" />
+                <TextBlock Text="Disk Space Analyzer" Style="{StaticResource FC_PageTitleStyle}" />
 
                 <!-- Scan options and folder picker -->
                 <StackPanel Spacing="10">
-                    <TextBlock Text="Target Location" FontSize="13" FontWeight="SemiBold" />
+                    <TextBlock Text="Target Location" Style="{StaticResource FC_SectionHeaderStyle}" />
                     
                     <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                             BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                            BorderThickness="1" CornerRadius="8" Padding="18,14">
+                            BorderThickness="1" CornerRadius="{StaticResource FC_CardCornerRadius}" Padding="{StaticResource FC_CardPadding}">
                         <StackPanel Spacing="14">
                             <!-- Target selector -->
                             <Grid ColumnSpacing="12">
@@ -80,8 +80,7 @@
                                 
                                 <TextBlock Grid.Column="0"
                                            Text="{x:Bind ViewModel.DriveInfoText, Mode=OneWay}"
-                                           FontSize="12"
-                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           Style="{StaticResource FC_SubtextStyle}"
                                            VerticalAlignment="Center" />
                                 
                                 <ToggleSwitch Grid.Column="1"
@@ -98,11 +97,11 @@
 
                 <!-- Results list card -->
                 <StackPanel Spacing="10" Visibility="{x:Bind ViewModel.HasResults, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
-                    <TextBlock Text="Storage Distribution" FontSize="13" FontWeight="SemiBold" />
+                    <TextBlock Text="Storage Distribution" Style="{StaticResource FC_SectionHeaderStyle}" />
 
                     <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                             BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                            BorderThickness="1" CornerRadius="8">
+                            BorderThickness="1" CornerRadius="{StaticResource FC_CardCornerRadius}">
                         <ListView ItemsSource="{x:Bind ViewModel.Items, Mode=OneWay}"
                                   SelectionMode="None"
                                   Padding="0,4">
@@ -115,39 +114,49 @@
                             </ListView.ItemContainerStyle>
                             <ListView.ItemTemplate>
                                 <DataTemplate x:DataType="vm:AnalyzerItemViewModel">
-                                    <Grid Padding="18,12"
+                                    <Grid Padding="16,10"
                                           BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
-                                          BorderThickness="0,0,0,1"
-                                          ToolTipService.ToolTip="{x:Bind FullPath}">
+                                          BorderThickness="0,0,0,1">
+                                        <Grid.ContextFlyout>
+                                            <MenuFlyout>
+                                                <MenuFlyoutItem Text="Open in Explorer" Tag="{x:Bind FullPath}" Click="OpenExplorer_Click">
+                                                    <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8DA;" /></MenuFlyoutItem.Icon>
+                                                </MenuFlyoutItem>
+                                                <MenuFlyoutItem Text="Copy Path" Tag="{x:Bind FullPath}" Click="CopyPath_Click">
+                                                    <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8C8;" /></MenuFlyoutItem.Icon>
+                                                </MenuFlyoutItem>
+                                            </MenuFlyout>
+                                        </Grid.ContextFlyout>
+                                        
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="Auto" />
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto" /> <!-- Icon -->
-                                            <ColumnDefinition Width="*" />    <!-- Name & Path -->
-                                            <ColumnDefinition Width="Auto" /> <!-- Size & Pct -->
-                                        </Grid.ColumnDefinitions>
                                         
-                                        <!-- Icon -->
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <!-- Folder Icon -->
                                         <FontIcon Grid.Row="0" Grid.Column="0"
-                                                  Glyph="{x:Bind IconGlyph}"
-                                                  FontSize="15"
-                                                  Margin="0,0,12,0"
+                                                  Glyph="&#xED43;"
+                                                  FontSize="16"
                                                   Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                  Margin="0,0,12,0"
                                                   VerticalAlignment="Center" />
-                                                  
+
                                         <!-- Name & Path -->
                                         <StackPanel Grid.Row="0" Grid.Column="1" VerticalAlignment="Center">
-                                            <TextBlock Text="{x:Bind Name}" FontWeight="SemiBold" FontSize="12.5" />
-                                            <TextBlock Text="{x:Bind FullPath}" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Text="{x:Bind Name}" Style="{StaticResource FC_CardHeaderStyle}" />
+                                            <TextBlock Text="{x:Bind FullPath}" Style="{StaticResource FC_CaptionStyle}" TextTrimming="CharacterEllipsis" />
                                         </StackPanel>
 
                                         <!-- Size Label -->
                                         <TextBlock Grid.Row="0" Grid.Column="2"
                                                    Text="{x:Bind SizeAndPercentageText, Mode=OneWay}"
-                                                   FontSize="12"
-                                                   FontWeight="SemiBold"
+                                                   Style="{StaticResource FC_CardHeaderStyle}"
                                                    Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
                                                    VerticalAlignment="Center"
                                                    HorizontalAlignment="Right" />
@@ -169,10 +178,9 @@
                 <!-- Status Card -->
                 <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                         BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                        BorderThickness="1" CornerRadius="8" Padding="18,14">
+                        BorderThickness="1" CornerRadius="{StaticResource FC_CardCornerRadius}" Padding="{StaticResource FC_CardPadding}">
                     <TextBlock Text="{x:Bind ViewModel.StatusText, Mode=OneWay}"
-                               FontSize="12"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               Style="{StaticResource FC_SubtextStyle}"
                                TextWrapping="WrapWholeWords" />
                 </Border>
 

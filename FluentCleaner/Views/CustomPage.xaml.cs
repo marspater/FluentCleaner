@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using FluentCleaner.Services;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -220,36 +220,49 @@ public sealed partial class CustomPage : Page, IPageActions, ISearchablePage
 
     private async void Delete_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not MenuFlyoutItem { Tag: CustomEntryVm vm }) return;
-
-        var dialog = new ContentDialog
-        {
-            XamlRoot          = XamlRoot,
-            RequestedTheme    = ActualTheme,
-            CornerRadius      = new CornerRadius(8),
-            Title             = ResourceService.Fmt("St_CustomDeleteTitle", vm.Name),
-            Content           = ResourceService.Get("St_CustomDeleteMessage"),
-            PrimaryButtonText = ResourceService.Get("St_CustomDeleteConfirm"),
-            CloseButtonText   = ResourceService.Get("St_CustomDeleteCancel"),
-            DefaultButton     = ContentDialogButton.Close
-        };
-
-        if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
+        if (sender is not MenuFlyoutItem { Tag: CustomEntryVm vm } || XamlRoot is null) return;
 
         try
         {
-            File.Delete(vm.FilePath);
+            var dialog = new ContentDialog
+            {
+                XamlRoot          = XamlRoot,
+                RequestedTheme    = ActualTheme,
+                CornerRadius      = new CornerRadius(8),
+                Title             = ResourceService.Fmt("St_CustomDeleteTitle", vm.Name),
+                Content           = ResourceService.Get("St_CustomDeleteMessage"),
+                PrimaryButtonText = ResourceService.Get("St_CustomDeleteConfirm"),
+                CloseButtonText   = ResourceService.Get("St_CustomDeleteCancel"),
+                DefaultButton     = ContentDialogButton.Close
+            };
+
+            if (await DialogHelper.ShowSafeAsync(dialog) != ContentDialogResult.Primary) return;
+
+            var fullCustomDir = Path.GetFullPath(CustomDir);
+            var fullFile = Path.GetFullPath(vm.FilePath);
+            if (fullFile.StartsWith(fullCustomDir, StringComparison.OrdinalIgnoreCase) && File.Exists(vm.FilePath))
+                File.Delete(vm.FilePath);
+
+            LoadEntries();
+            lblStatus.Text = $"Deleted {vm.Name}.";
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Failed to delete custom cleaner: {ex.Message}");
+            lblStatus.Text = $"Failed to delete {vm.Name}: {ex.Message}";
         }
-        LoadEntries();
     }
 
     private async void RunScript_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not Button { Tag: CustomEntryVm vm } || !vm.IsScript) return;
+
+        var fullCustomDir = Path.GetFullPath(CustomDir);
+        var fullScript = Path.GetFullPath(vm.FilePath);
+        if (!fullScript.StartsWith(fullCustomDir, StringComparison.OrdinalIgnoreCase))
+        {
+            lblStatus.Text = $"{vm.Name}: rejected — script outside custom directory.";
+            return;
+        }
 
         lblStatus.Text = ResourceService.Fmt("St_CustomRunning", vm.Name);
         int exitCode = -1;
@@ -269,9 +282,10 @@ public sealed partial class CustomPage : Page, IPageActions, ISearchablePage
         try
         {
             var psi = new System.Diagnostics.ProcessStartInfo(
-                "powershell.exe",
+                SecurityGuard.GetSafePowerShellPath(),
                 "-NoProfile -ExecutionPolicy Bypass -Command -")
             {
+                WorkingDirectory       = AppContext.BaseDirectory,
                 RedirectStandardInput  = true,
                 RedirectStandardOutput = true,
                 RedirectStandardError  = true,
@@ -306,31 +320,48 @@ public sealed partial class CustomPage : Page, IPageActions, ISearchablePage
 
     private async Task ShowEditorAsync(CustomEntryVm? existing)
     {
-        var dialog = new NewCleanerDialog(existing)
-        {
-            XamlRoot       = XamlRoot,
-            RequestedTheme = ActualTheme
-        };
-
-        if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
-
-        var name    = dialog.EntryName;
-        var content = dialog.EntryContent;
-        if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(content)) return;
-
-        var ext = dialog.IsScript ? ".ps1" : ".ini";
+        if (XamlRoot is null) return;
 
         try
         {
+            var dialog = new NewCleanerDialog(existing)
+            {
+                XamlRoot       = XamlRoot,
+                RequestedTheme = ActualTheme
+            };
+
+            if (await DialogHelper.ShowSafeAsync(dialog) != ContentDialogResult.Primary) return;
+
+            var rawName = dialog.EntryName;
+            var content = dialog.EntryContent;
+            if (string.IsNullOrWhiteSpace(rawName) || string.IsNullOrWhiteSpace(content)) return;
+
+            var name = SecurityGuard.SanitizeFileName(rawName);
+            var ext = dialog.IsScript ? ".ps1" : ".ini";
+            var targetFile = Path.Combine(CustomDir, name + ext);
+
+            var fullCustomDir = Path.GetFullPath(CustomDir);
+            var fullTarget = Path.GetFullPath(targetFile);
+            if (!fullTarget.StartsWith(fullCustomDir, StringComparison.OrdinalIgnoreCase))
+            {
+                lblStatus.Text = "Failed to save cleaner: Invalid target directory.";
+                return;
+            }
+
             Directory.CreateDirectory(CustomDir);
             if (existing is not null && File.Exists(existing.FilePath))
-                File.Delete(existing.FilePath);
-            File.WriteAllText(Path.Combine(CustomDir, name + ext), content);
+            {
+                var existingFull = Path.GetFullPath(existing.FilePath);
+                if (existingFull.StartsWith(fullCustomDir, StringComparison.OrdinalIgnoreCase))
+                    File.Delete(existing.FilePath);
+            }
+            await File.WriteAllTextAsync(targetFile, content);
             LoadEntries();
+            lblStatus.Text = $"Saved {name}.";
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Failed to save custom cleaner: {ex.Message}");
+            lblStatus.Text = $"Failed to save cleaner: {ex.Message}";
         }
     }
 }

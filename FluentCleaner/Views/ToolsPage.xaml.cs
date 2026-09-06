@@ -1,5 +1,4 @@
-// Imported and adapted from my Winslopr app https://github.com/builtbybel/Winslopr/blob/main/docs/extensions.md
-// Jut reused here with namespace changes only.
+using FluentCleaner.Tools;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System.Collections.ObjectModel;
@@ -7,61 +6,6 @@ using System.Diagnostics;
 using System.Text;
 
 namespace FluentCleaner.Views;
-
-public enum ToolsCategory
-{
-    All, System, Privacy, Network, Apps, Debloat
-}
-
-public class ToolsDefinition
-{
-    public string Title { get; set; } = string.Empty;
-    public string Icon { get; set; } = string.Empty;
-    public string ScriptPath { get; set; } = string.Empty;
-    public ScriptMeta Meta { get; set; } = new ScriptMeta();
-
-    public string Description => Meta?.Description ?? string.Empty;
-    public ToolsCategory Category => Meta?.Category ?? ToolsCategory.All;
-    public List<string> Options => Meta?.Options ?? new List<string>();
-    public bool SupportsInput => Meta?.SupportsInput ?? false;
-    public string InputPlaceholder => Meta?.InputPlaceholder ?? string.Empty;
-    public string PoweredByText => Meta?.PoweredByText ?? string.Empty;
-    public string PoweredByUrl => Meta?.PoweredByUrl ?? string.Empty;
-    public bool UseConsole => Meta?.UseConsole ?? false;
-    public bool UseLog => Meta?.UseLog ?? false;
-
-    public ToolsDefinition(string title, string icon, string scriptPath, ScriptMeta meta)
-    {
-        Title = title ?? string.Empty;
-        Icon = icon ?? string.Empty;
-        ScriptPath = scriptPath ?? string.Empty;
-        Meta = meta ?? new ScriptMeta();
-    }
-    public ToolsDefinition()
-    {
-        Title = string.Empty;
-        Icon = string.Empty;
-        ScriptPath = string.Empty;
-        Meta = new ScriptMeta();
-    }
-}
-
-
-public record ScriptMeta
-{
-    public string Description { get; init; } = "";
-    public List<string> Options { get; init; } = new();
-    public ToolsCategory Category { get; init; } = ToolsCategory.All;
-    public bool UseConsole { get; init; } = false;
-    public bool UseLog { get; init; } = false;
-    public bool SupportsInput { get; init; } = false;
-    public string InputPlaceholder { get; init; } = "";
-    public string PoweredByText { get; init; } = "";
-    public string PoweredByUrl { get; init; } = "";
-
-    public ScriptMeta() {}
-}
-
 
 public sealed partial class ToolsPage : Page, ISearchablePage
 {
@@ -105,41 +49,48 @@ public sealed partial class ToolsPage : Page, ISearchablePage
 
     private async void LoadToolsAsync()
     {
-        _allTools.Clear();
-        _visibleTools.Clear();
-        ClearDetails();
-
-        // Extensions folder is optional;lets check before showing any status
-        if (!Directory.Exists(ExtensionsDir))
+        try
         {
-            ShowNoFolder();
-            return;
-        }
+            _allTools.Clear();
+            _visibleTools.Clear();
+            ClearDetails();
 
-        lblStatus.Text = "Loading...";
-        ShowList();
-
-        string[] files = await Task.Run(() => Directory.GetFiles(ExtensionsDir, "*.ps1"));
-
-        var loaded = await Task.Run(() =>
-        {
-            var list = new List<ToolsDefinition>();
-            foreach (var path in files)
+            // Extensions folder is optional;lets check before showing any status
+            if (!Directory.Exists(ExtensionsDir))
             {
-                var title = Path.GetFileNameWithoutExtension(path);
-                var meta = ReadMetadataFromScript(path);
-                list.Add(new ToolsDefinition(title, PickIconForScript(title), path, meta));
+                ShowNoFolder();
+                return;
             }
-            return list;
-        });
 
-        _allTools.AddRange(loaded);
-        ApplyFilterAndSearch();
+            lblStatus.Text = "Loading...";
+            ShowList();
 
-        lblStatus.Text = _allTools.Count == 1 ? "1 extension loaded." : $"{_allTools.Count} extensions loaded.";
+            string[] files = await Task.Run(() => Directory.GetFiles(ExtensionsDir, "*.ps1"));
 
-        if (_visibleTools.Count > 0)
-            listTools.SelectedIndex = 0;
+            var loaded = await Task.Run(() =>
+            {
+                var list = new List<ToolsDefinition>();
+                foreach (var path in files)
+                {
+                    var title = Path.GetFileNameWithoutExtension(path);
+                    var meta = ReadMetadataFromScript(path);
+                    list.Add(new ToolsDefinition(title, PickIconForScript(title), path, meta));
+                }
+                return list;
+            });
+
+            _allTools.AddRange(loaded);
+            ApplyFilterAndSearch();
+
+            lblStatus.Text = _allTools.Count == 1 ? "1 extension loaded." : $"{_allTools.Count} extensions loaded.";
+
+            if (_visibleTools.Count > 0)
+                listTools.SelectedIndex = 0;
+        }
+        catch (Exception ex)
+        {
+            lblStatus.Text = "Failed to load extensions: " + ex.Message;
+        }
     }
 
     // ---------------- Filter / Search ----------------
@@ -287,6 +238,14 @@ public sealed partial class ToolsPage : Page, ISearchablePage
             return;
         }
 
+        var fullExtDir = Path.GetFullPath(ExtensionsDir);
+        var fullScript = Path.GetFullPath(_selectedTool.ScriptPath);
+        if (!fullScript.StartsWith(fullExtDir, StringComparison.OrdinalIgnoreCase))
+        {
+            lblStatus.Text = "Rejected: Script path outside extensions directory.";
+            return;
+        }
+
         btnRun.IsEnabled = false;
         btnUninstall.IsEnabled = false;
         progressRing.IsActive = true;
@@ -351,16 +310,19 @@ public sealed partial class ToolsPage : Page, ISearchablePage
             return;
         }
 
+        if (XamlRoot is null) return;
+
         var dialog = new ContentDialog
         {
             Title = "Remove script",
             Content = $"Remove \"{_selectedTool.Title}\" from the Extensions folder?",
             PrimaryButtonText = "Remove",
             CloseButtonText = "Cancel",
+            DefaultButton = ContentDialogButton.Close,
             XamlRoot = XamlRoot
         };
 
-        if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
+        if (await Services.DialogHelper.ShowSafeAsync(dialog) != ContentDialogResult.Primary) return;
 
         try
         {
@@ -412,24 +374,31 @@ public sealed partial class ToolsPage : Page, ISearchablePage
 
     private async void btnShowHelp_Click(object sender, RoutedEventArgs e)
     {
-        if (_selectedTool is null) return;
-        var helpOpt = _selectedTool.Options
-            .FirstOrDefault(o => o.Contains("help", StringComparison.OrdinalIgnoreCase));
-        if (helpOpt is null) return;
+        try
+        {
+            if (_selectedTool is null) return;
+            var helpOpt = _selectedTool.Options
+                .FirstOrDefault(o => o.Contains("help", StringComparison.OrdinalIgnoreCase));
+            if (helpOpt is null) return;
 
-        txtLog.Text = "";
-        AppendLog($"── {_selectedTool.Title} — Help ──");
-        await RunScriptAsync(_selectedTool.ScriptPath, new[] { helpOpt }, false, AppendLog);
+            txtLog.Text = "";
+            AppendLog($"── {_selectedTool.Title} — Help ──");
+            await RunScriptAsync(_selectedTool.ScriptPath, new[] { helpOpt }, false, AppendLog);
+        }
+        catch (Exception ex)
+        {
+            lblStatus.Text = "Help error: " + ex.Message;
+        }
     }
 
     private void btnClearLog_Click(object sender, RoutedEventArgs e) =>
         txtLog.Text = "";
 
-    private void linkPoweredBy_Click(object sender, RoutedEventArgs e)
+    private async void linkPoweredBy_Click(object sender, RoutedEventArgs e)
     {
         var url = linkPoweredBy.Tag?.ToString();
-        if (string.IsNullOrWhiteSpace(url)) return;
-        try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); }
+        if (string.IsNullOrWhiteSpace(url) || !Services.SecurityGuard.IsValidWebUrl(url)) return;
+        try { await Services.AppLinks.OpenAsync(url); }
         catch (Exception ex) { Debug.WriteLine($"Failed to open powered by link: {ex.Message}"); }
     }
 
@@ -450,7 +419,10 @@ public sealed partial class ToolsPage : Page, ISearchablePage
                                        Action<string>? onOutput = null) =>
         Task.Run(() =>
         {
-            var psi = new ProcessStartInfo("powershell.exe");
+            var psi = new ProcessStartInfo(Services.SecurityGuard.GetSafePowerShellPath())
+            {
+                WorkingDirectory = AppContext.BaseDirectory
+            };
             if (useConsole)
             {
                 psi.ArgumentList.Add("-NoExit");

@@ -18,9 +18,17 @@ public sealed partial class MainWindow : Window
         SetTitleBar(AppTitleBar);
         AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
 
-        SyncSearchState();                           //enable/disable search for initial page
-        SizeChanged += MainWindow_SizeChanged;       //watch for window resize; compact search
-        UpdateTitleSearch(AppWindow.Size.Width);     //apply correct search mode on first load
+        // Navigate to CleanerPage on startup
+        if (NavView.MenuItems.Count > 0)
+        {
+            NavView.SelectedItem = NavView.MenuItems[0];
+            if (NavFrame.Content is null)
+                NavFrame.Navigate(typeof(CleanerPage), null, new SuppressNavigationTransitionInfo());
+        }
+
+        SyncSearchState();                           // enable/disable search for initial page
+        SizeChanged += MainWindow_SizeChanged;       // watch for window resize; compact search
+        UpdateTitleSearch(AppWindow.Size.Width);     // apply correct search mode on first load
     }
 
     // --- TitleBar pane toggle -------------------------------------------------
@@ -45,23 +53,40 @@ public sealed partial class MainWindow : Window
         }
         else if (args.SelectedItem is NavigationViewItem item)
         {
-            switch (item.Tag)
+            switch (item.Tag?.ToString())
             {
                 case "Cleaner":
-                    NavFrame.Navigate(typeof(CleanerPage), null, transition);
+                    if (NavFrame.Content is not CleanerPage)
+                        NavFrame.Navigate(typeof(CleanerPage), null, transition);
                     break;
-                case "Terminal": NavFrame.Navigate(typeof(TerminalPage), null, transition); break;
-                case "Custom":   NavFrame.Navigate(typeof(CustomPage),   null, transition); break;
+                case "Tools":
+                    if (NavFrame.Content is not ToolsPage)
+                        NavFrame.Navigate(typeof(ToolsPage), null, transition);
+                    break;
+                case "Analyzer":
+                    if (NavFrame.Content is not AnalyzerView)
+                        NavFrame.Navigate(typeof(AnalyzerView), null, transition);
+                    break;
+                case "Developer":
+                    if (NavFrame.Content is not DeveloperCleanupView)
+                        NavFrame.Navigate(typeof(DeveloperCleanupView), null, transition);
+                    break;
+                case "Terminal":
+                    if (NavFrame.Content is not TerminalPage)
+                        NavFrame.Navigate(typeof(TerminalPage), null, transition);
+                    break;
+                case "Custom":
+                    if (NavFrame.Content is not CustomPage)
+                        NavFrame.Navigate(typeof(CustomPage), null, transition);
+                    break;
             }
         }
 
         SyncSearchState();
     }
 
-
     // --- Page actions flyout --------------------------------------------------
 
-    // Rebuilt every time the flyout opens so it always reflects the current page.
     private void PageActionsFlyout_Opening(object sender, object e)
     {
         PageActionsFlyout.Items.Clear();
@@ -80,7 +105,6 @@ public sealed partial class MainWindow : Window
 
     // --- Search ---------------------------------------------------------------
 
-    // disable search controls on pages that don't support it
     private void SyncSearchState()
     {
         bool searchable = NavFrame.Content is ISearchablePage;
@@ -100,7 +124,6 @@ public sealed partial class MainWindow : Window
     private void MainWindow_SizeChanged(object sender, WindowSizeChangedEventArgs args) =>
         UpdateTitleSearch(args.Size.Width);
 
-    //below 560 px:collapse to icon + flyout; between 560-700:shrink box; above:full width
     private void UpdateTitleSearch(double width)
     {
         bool compact = width < 560;
@@ -110,6 +133,4 @@ public sealed partial class MainWindow : Window
         if (!compact)
             TitleSearchBox.Width = width < 700 ? 220 : 280;
     }
-
-
 }

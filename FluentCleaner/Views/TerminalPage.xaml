@@ -7,10 +7,10 @@
     mc:Ignorable="d"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008">
 
-    <Grid Padding="12,12,12,12">
+    <Grid Padding="16">
 
         <!-- output + input in one card; suggestion popup stays inside -->
-        <Border CornerRadius="8"
+        <Border CornerRadius="{StaticResource FC_CardCornerRadius}"
                 Background="{ThemeResource SolidBackgroundFillColorBaseBrush}"
                 BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                 BorderThickness="1">
@@ -41,12 +41,13 @@
                 <AutoSuggestBox x:Name="InputBox"
                                 x:Uid="TerminalPlaceholder"
                                 Grid.Row="1"
-                                Margin="8,0,8,8"
+                                Margin="12,0,12,12"
                                 QueryIcon="Send"
                                 FontFamily="Cascadia Code, Consolas"
                                 FontSize="12"
                                 MaxSuggestionListHeight="200"
                                 IsEnabled="{x:Bind ViewModel.IsNotBusy, Mode=OneWay}"
+                                PreviewKeyDown="InputBox_PreviewKeyDown"
                                 TextChanged="Input_TextChanged"
                                 QuerySubmitted="Input_QuerySubmitted" />
             </Grid>

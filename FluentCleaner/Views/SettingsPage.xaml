@@ -23,17 +23,17 @@
         </StackPanel>
 
     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="32,26,32,32" Spacing="22" HorizontalAlignment="Stretch">
+        <StackPanel Margin="{StaticResource FC_PagePadding}" Spacing="{StaticResource FC_SectionSpacing}" HorizontalAlignment="Stretch">
 
-            <TextBlock x:Uid="SettingsTitle" Style="{StaticResource TitleTextBlockStyle}" />
+            <TextBlock x:Uid="SettingsTitle" Style="{StaticResource FC_PageTitleStyle}" />
 
             <!-- Appearance -->
             <StackPanel Spacing="10">
-                <TextBlock x:Uid="SectionAppearance" FontSize="13" FontWeight="SemiBold" />
+                <TextBlock x:Uid="SectionAppearance" Style="{StaticResource FC_SectionHeaderStyle}" />
 
                 <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                    BorderThickness="1" CornerRadius="8" Padding="18,14">
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1" CornerRadius="{StaticResource FC_CardCornerRadius}" Padding="{StaticResource FC_CardPadding}">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -57,7 +57,7 @@
 
             <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                    BorderThickness="1" CornerRadius="8" Padding="18,14">
+                    BorderThickness="1" CornerRadius="{StaticResource FC_CardCornerRadius}" Padding="{StaticResource FC_CardPadding}">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -84,10 +84,9 @@
             <StackPanel Spacing="10">
 
                 <StackPanel Spacing="2">
-                    <TextBlock x:Uid="SectionDatabase" FontSize="13" FontWeight="SemiBold" />
+                    <TextBlock x:Uid="SectionDatabase" Style="{StaticResource FC_SectionHeaderStyle}" />
                     <TextBlock x:Uid="LblDatabaseDesc"
-                               FontSize="12"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                               Style="{StaticResource FC_SubtextStyle}" />
                 </StackPanel>
 
                 <!-- ProgressRing shown while downloading -->
@@ -106,7 +105,7 @@
                 <!-- Database list card -->
                 <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                         BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                        BorderThickness="1" CornerRadius="8">
+                        BorderThickness="1" CornerRadius="{StaticResource FC_CardCornerRadius}">
 
                     <!-- Winapp2 row -->
                     <StackPanel>
@@ -166,17 +165,17 @@
                             <Border Grid.Column="0" Width="36" Height="36" CornerRadius="6"
                                     Background="{ThemeResource SubtleFillColorSecondaryBrush}"
                                     Margin="0,0,12,0" VerticalAlignment="Center">
-                                <FontIcon Glyph="&#xE7BA;" FontSize="18" Foreground="OrangeRed" />
+                                <FontIcon Glyph="&#xE7BA;" FontSize="18" Foreground="{ThemeResource SystemFillColorCautionBrush}" />
                             </Border>
 
                             <!-- Name + info -->
                             <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
                                 <StackPanel Orientation="Horizontal" Spacing="6">
                                     <TextBlock x:Uid="LblWinapp3" FontWeight="SemiBold" />
-                                    <Border Background="OrangeRed" CornerRadius="3"
+                                    <Border Background="{ThemeResource SystemFillColorCautionBrush}" CornerRadius="{StaticResource FC_BadgeCornerRadius}"
                                             Padding="4,1" VerticalAlignment="Center">
                                         <TextBlock x:Uid="LblWinapp3Tag" FontSize="10"
-                                                   Foreground="White" />
+                                                   Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" />
                                     </Border>
                                 </StackPanel>
                                 <TextBlock FontSize="11"
@@ -233,8 +232,8 @@
                                 <StackPanel Orientation="Horizontal" Spacing="6">
                                     <TextBlock x:Uid="LblWinappx" FontWeight="SemiBold" />
                                     <Border Background="{ThemeResource SystemFillColorSuccessBrush}"
-                                            CornerRadius="3" Padding="4,1" VerticalAlignment="Center">
-                                        <TextBlock x:Uid="LblWinappxTag" FontSize="10" Foreground="White" />
+                                            CornerRadius="{StaticResource FC_BadgeCornerRadius}" Padding="4,1" VerticalAlignment="Center">
+                                        <TextBlock x:Uid="LblWinappxTag" FontSize="10" Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" />
                                     </Border>
                                 </StackPanel>
                                 <TextBlock FontSize="11"
@@ -344,10 +343,9 @@
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Grid.Column="0" Spacing="2">
-                        <TextBlock x:Uid="SectionPostClean" FontSize="13" FontWeight="SemiBold" />
+                        <TextBlock x:Uid="SectionPostClean" Style="{StaticResource FC_SectionHeaderStyle}" />
                         <TextBlock x:Uid="LblPostCleanDesc"
-                                   FontSize="12"
-                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                   Style="{StaticResource FC_SubtextStyle}" />
                     </StackPanel>
 
                     <ToggleSwitch Grid.Column="1"
@@ -363,11 +361,11 @@
                 <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                         BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                         BorderThickness="1"
-                        CornerRadius="8">
+                        CornerRadius="{StaticResource FC_CardCornerRadius}">
                     <TextBox Text="{x:Bind ViewModel.PostCleanCommands, Mode=TwoWay,
                                         UpdateSourceTrigger=PropertyChanged}"
                              AcceptsReturn="True"
-                             FontFamily="Consolas"
+                             FontFamily="Cascadia Code, Consolas"
                              FontSize="12"
                              MinHeight="116"
                              IsEnabled="{x:Bind ViewModel.PostCleanEnabled, Mode=OneWay}"
@@ -388,10 +386,9 @@
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Grid.Column="0" Spacing="2">
-                        <TextBlock x:Uid="SectionExclusions" FontSize="13" FontWeight="SemiBold" />
+                        <TextBlock x:Uid="SectionExclusions" Style="{StaticResource FC_SectionHeaderStyle}" />
                         <TextBlock x:Uid="LblExclusionsDesc"
-                                   FontSize="12"
-                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                   Style="{StaticResource FC_SubtextStyle}" />
                     </StackPanel>
 
                     <ToggleSwitch Grid.Column="1"
@@ -406,11 +403,11 @@
                 <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                         BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                         BorderThickness="1"
-                        CornerRadius="8">
+                        CornerRadius="{StaticResource FC_CardCornerRadius}">
                     <TextBox Text="{x:Bind ViewModel.GlobalExclusionsText, Mode=TwoWay,
                                         UpdateSourceTrigger=PropertyChanged}"
                              AcceptsReturn="True"
-                             FontFamily="Consolas"
+                             FontFamily="Cascadia Code, Consolas"
                              FontSize="12"
                              MinHeight="116"
                              IsEnabled="{x:Bind ViewModel.GlobalExclusionsEnabled, Mode=OneWay}"
@@ -425,10 +422,9 @@
             <!-- History -->
             <StackPanel Spacing="10">
                 <StackPanel Spacing="2">
-                    <TextBlock x:Uid="SectionHistory" FontSize="13" FontWeight="SemiBold" />
+                    <TextBlock x:Uid="SectionHistory" Style="{StaticResource FC_SectionHeaderStyle}" />
                     <TextBlock x:Uid="LblHistoryDesc"
-                               FontSize="12"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                               Style="{StaticResource FC_SubtextStyle}" />
                 </StackPanel>
 
                 <Expander HorizontalAlignment="Stretch"
@@ -500,21 +496,20 @@
 
                         <!-- title + AI badge -->
                         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <TextBlock x:Uid="SectionAI" FontSize="13" FontWeight="SemiBold"
+                            <TextBlock x:Uid="SectionAI" Style="{StaticResource FC_SectionHeaderStyle}"
                                        VerticalAlignment="Center" />
                             <Border Background="{ThemeResource SystemFillColorSuccessBrush}"
-                                    CornerRadius="3" Padding="4,1" VerticalAlignment="Center">
-                                <TextBlock x:Uid="LblAIOptIn" FontSize="10" Foreground="White" />
+                                    CornerRadius="{StaticResource FC_BadgeCornerRadius}" Padding="4,1" VerticalAlignment="Center">
+                                <TextBlock x:Uid="LblAIOptIn" FontSize="10" Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" />
                             </Border>
                             <Border Background="{ThemeResource AccentFillColorDefaultBrush}"
-                                    CornerRadius="3" Padding="4,1" VerticalAlignment="Center">
-                                <TextBlock x:Uid="LblAIPreview" FontSize="10" Foreground="White" />
+                                    CornerRadius="{StaticResource FC_BadgeCornerRadius}" Padding="4,1" VerticalAlignment="Center">
+                                <TextBlock x:Uid="LblAIPreview" FontSize="10" Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" />
                             </Border>
                         </StackPanel>
 
                         <TextBlock x:Uid="LblAIDesc" TextWrapping="Wrap"
-                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                   FontSize="12" />
+                                   Style="{StaticResource FC_SubtextStyle}" />
 
                         <HyperlinkButton x:Uid="BtnAIDiscussion"
                                          NavigateUri="https://github.com/marspater/FluentCleaner/discussions"
@@ -523,7 +518,7 @@
 
                     <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                         BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                        BorderThickness="1" CornerRadius="8" Padding="18,14">
+                        BorderThickness="1" CornerRadius="{StaticResource FC_CardCornerRadius}" Padding="{StaticResource FC_CardPadding}">
                         <Grid ColumnSpacing="12">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
@@ -532,7 +527,7 @@
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
 
-                            <Border Grid.Column="0" Width="36" Height="36" CornerRadius="6"
+                            <Border Grid.Column="0" Width="36" Height="36" CornerRadius="{StaticResource FC_CardCornerRadius}"
                                 Background="{ThemeResource SubtleFillColorSecondaryBrush}"
                                 VerticalAlignment="Center">
                                 <FontIcon Glyph="&#xE899;" FontSize="18"
@@ -542,7 +537,7 @@
                             <PasswordBox Grid.Column="1"
                                      x:Name="ApiKeyBox"
                                      PlaceholderText="gsk_..."
-                                     FontFamily="Consolas"
+                                     FontFamily="Cascadia Code, Consolas"
                                      FontSize="12"
                                      VerticalAlignment="Center" />
 
@@ -564,38 +559,35 @@
 
                     <!-- test result -->
                     <TextBlock x:Name="lblApiTestResult"
-                               FontSize="12" TextWrapping="Wrap"
+                               Style="{StaticResource FC_SubtextStyle}" TextWrapping="Wrap"
                                Margin="0,6,0,0"
-                               Visibility="Collapsed"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                               Visibility="Collapsed" />
 
                     <!-- Custom Cleaner AI hint -->
                     <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                             BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                            BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,8,0,0">
+                            BorderThickness="1" CornerRadius="{StaticResource FC_CardCornerRadius}" Padding="{StaticResource FC_CardPadding}" Margin="0,8,0,0">
                         <TextBlock x:Uid="LblAICustomHint"
-                                   TextWrapping="Wrap" FontSize="12"
-                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                   TextWrapping="Wrap" Style="{StaticResource FC_SubtextStyle}" />
                     </Border>
                 </StackPanel>
 
                 <!-- Backup / Portable -->
                 <StackPanel Spacing="10">
-                    <TextBlock x:Uid="SectionBackup" FontSize="13" FontWeight="SemiBold" />
+                    <TextBlock x:Uid="SectionBackup" Style="{StaticResource FC_SectionHeaderStyle}" />
                     <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                             BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                            BorderThickness="1" CornerRadius="8" Padding="16,12">
+                            BorderThickness="1" CornerRadius="{StaticResource FC_CardCornerRadius}" Padding="{StaticResource FC_CardPadding}">
                         <StackPanel Spacing="8">
                             <TextBlock x:Uid="LblBackupDesc"
-                                       FontSize="12"
-                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       Style="{StaticResource FC_SubtextStyle}"
                                        TextWrapping="Wrap" />
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <Button x:Uid="BtnExport" Click="ExportSettings_Click" MinWidth="90" />
                                 <Button x:Uid="BtnImport" Click="ImportSettings_Click" MinWidth="90" />
                             </StackPanel>
                             <TextBlock x:Uid="LblPortableActive"
-                                       FontSize="11"
+                                       Style="{StaticResource FC_CaptionStyle}"
                                        Foreground="{ThemeResource SystemFillColorSuccessBrush}"
                                        Visibility="{x:Bind ViewModel.IsPortable, Mode=OneWay,
                                            Converter={StaticResource BoolToVisibilityConverter}}" />
@@ -605,7 +597,7 @@
 
                 <!-- About -->
             <StackPanel Spacing="10">
-                <TextBlock x:Uid="SectionAbout" FontSize="13" FontWeight="SemiBold" />
+                <TextBlock x:Uid="SectionAbout" Style="{StaticResource FC_SectionHeaderStyle}" />
 
             <Expander x:Name="AboutExpander"
                       HorizontalAlignment="Stretch"

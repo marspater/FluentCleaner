@@ -12,6 +12,7 @@ public partial class CliViewModel : ObservableObject
 {
     private readonly CliCleanerModule _cleaner = new();   // winapp2 clean/analyze/list/categories
     private readonly CliDebloatModule _appx    = new();   // appx debloater module
+    private readonly CliExtensionsModule _extensions = new(); // extensions / tools module
 
     // Hidden/experimental terminal commands. Keeping them centralized makes it obvious
     // which commands are not regular UI features.
@@ -73,6 +74,12 @@ public partial class CliViewModel : ObservableObject
             prefix = "appx ";
             source = _appx.GetSuggestions(query);
         }
+        else if (verb == "run")
+        {
+            // "run <tool>" ; delegates to CliExtensionsModule
+            prefix = "run ";
+            source = _extensions.GetSuggestions(query);
+        }
         else if ((verb is "clean" or "analyze" or "scan") &&
                  query.StartsWith("category ", StringComparison.OrdinalIgnoreCase))
         {
@@ -80,6 +87,10 @@ public partial class CliViewModel : ObservableObject
             var catQuery = query["category ".Length..];
             prefix = $"{verb} category ";
             source = _cleaner.GetCategorySuggestions(catQuery);
+        }
+        else if (verb == "" && "tools".StartsWith(query, StringComparison.OrdinalIgnoreCase))
+        {
+            source = ["tools"];
         }
         else
             // Default;suggest winapp2 entry names for clean/analyze/scan/list
@@ -125,6 +136,8 @@ public partial class CliViewModel : ObservableObject
             case "list":
             case "categories": await _cleaner.ExecuteAsync(verb, arg, Output, v => IsBusy = v); break;
             case "appx":       await _appx.ExecuteAsync(arg, Output, v => IsBusy = v);          break;
+            case "tools":      _extensions.List(Output);                                         break;
+            case "run":        await _extensions.RunAsync(arg, Output, v => IsBusy = v);         break;
             case "theme":      RunTheme(arg);                                                    break;
             case "backdrop":   RunBackdrop(arg);                                                 break;
             case "drives":     await RunDrivesAsync();                                           break;
@@ -240,6 +253,10 @@ public partial class CliViewModel : ObservableObject
                 appx scan                  list bloatware from Winappx.ini only
                 appx remove <name>         remove a specific package
                 appx remove all            remove all detected bloatware
+
+              Tools / Extensions
+                tools                      list installed extension scripts
+                run <tool> [option]        run an extension script
 
               Appearance
                 theme dark|light|system    change app theme

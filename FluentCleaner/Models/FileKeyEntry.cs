@@ -14,11 +14,19 @@ public enum FileKeyFlag
 public class FileKeyEntry
 {
     // Directory path to scan. May contain %EnvVar% tokens and * wildcards in path segments.
-    public string Path { get; set; } = "";
+    public string Path
+    {
+        get => field;
+        set => field = value?.Trim() ?? "";
+    } = "";
 
     /* Semicolon-separated file filter(s), e.g. "*.tmp" or "*.log;*.bak".
        Defaults to "*.*" when no pattern is specified in the ini. */
-    public string Pattern { get; set; } = "*.*";
+    public string Pattern
+    {
+        get => field;
+        set => field = string.IsNullOrWhiteSpace(value) ? "*.*" : value.Trim();
+    } = "*.*";
 
     // Whether to recurse into subdirectories and whether to remove empty dirs afterwards.
     public FileKeyFlag Flag { get; set; } = FileKeyFlag.None;
@@ -26,7 +34,7 @@ public class FileKeyEntry
     public static FileKeyEntry Parse(string value)
     {
         var parts = value.Split('|');
-        var entry = new FileKeyEntry { Path = parts[0].Trim() };
+        var entry = new FileKeyEntry { Path = parts[0] };
 
         // parts[1] can be either a file pattern OR a flag (when no pattern is given)
         if (parts.Length == 2)

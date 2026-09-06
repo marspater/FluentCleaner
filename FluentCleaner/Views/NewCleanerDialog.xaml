@@ -3,38 +3,38 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     DefaultButton="Primary"
-    CornerRadius="8">
+    CornerRadius="{StaticResource FC_CardCornerRadius}">
 
-    <StackPanel Spacing="4">
+    <StackPanel Spacing="8">
 
         <!-- Type picker -->
-        <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,0,0,4">
+        <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,0,0,2">
             <ToggleButton x:Name="btnIni" x:Uid="DlgNewCleanerTypeIni" IsChecked="True" Click="TypeBtn_Click" />
-            <ToggleButton x:Name="btnPs1" x:Uid="DlgNewCleanerTypePs1"                    Click="TypeBtn_Click" />
+            <ToggleButton x:Name="btnPs1" x:Uid="DlgNewCleanerTypePs1" Click="TypeBtn_Click" />
         </StackPanel>
 
         <!-- Name -->
-        <TextBox x:Name="nameBox" Margin="0,0,0,4" />
+        <TextBox x:Name="nameBox" />
 
         <!-- AI generate row (hidden when no API key is configured) -->
-        <Grid x:Name="aiRow" Margin="0,0,0,4">
+        <Grid x:Name="aiRow">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <TextBox x:Name="promptBox"
-                     Margin="0,0,6,0" />
+                     Margin="0,0,8,0" />
             <Button x:Name="generateBtn" x:Uid="DlgNewCleanerGenerate" Grid.Column="1" Click="GenerateBtn_Click" />
         </Grid>
 
         <!-- Content header: label left, Load template right -->
-        <Grid>
+        <Grid Margin="0,4,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <TextBlock x:Name="contentLabel" VerticalAlignment="Center"
-                       Style="{StaticResource BodyStrongTextBlockStyle}" />
+                       Style="{StaticResource FC_CardHeaderStyle}" />
             <HyperlinkButton x:Uid="DlgNewCleanerLoadTemplate"
                              Grid.Column="1"
                              Padding="0" Click="TemplateBtn_Click" />
@@ -44,7 +44,7 @@
         <TextBox x:Name="contentBox"
                  AcceptsReturn="True"
                  TextWrapping="NoWrap"
-                 FontFamily="Consolas"
+                 FontFamily="Cascadia Code, Consolas"
                  FontSize="12"
                  Height="260"
                  IsSpellCheckEnabled="False"

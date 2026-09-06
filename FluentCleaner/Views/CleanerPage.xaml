@@ -25,11 +25,24 @@
 
         <!-- left panel;entry selector -->
         <Grid Grid.Column="0">
-                <!-- Empty state: nothing loaded yet (IsEmpty = Categories.Count == 0) -->
+                <!-- Loading state: shown while databases are parsing / detecting apps -->
+                <StackPanel HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Spacing="12"
+                            Visibility="{x:Bind ViewModel.IsLoading, Mode=OneWay,
+                                Converter={StaticResource BoolToVisibilityConverter}}">
+                    <ProgressRing IsActive="True" Width="36" Height="36" />
+                    <TextBlock Text="Detecting apps…"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               Style="{StaticResource CaptionTextBlockStyle}"
+                               TextAlignment="Center" />
+                </StackPanel>
+
+                <!-- Empty state: only when idle and nothing found (IsEmptyAndIdle) -->
                 <StackPanel HorizontalAlignment="Center"
                             VerticalAlignment="Center"
                             Spacing="8"
-                            Visibility="{x:Bind ViewModel.IsEmpty, Mode=OneWay,
+                            Visibility="{x:Bind ViewModel.IsEmptyAndIdle, Mode=OneWay,
                                 Converter={StaticResource BoolToVisibilityConverter}}">
                     <FontIcon Glyph="&#xE8A5;" FontSize="36"
                               Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
@@ -57,11 +70,9 @@
                                           Margin="8,3,8,0"
                                           Padding="0">
 
-                                    <!-- Category header: name + hover [...] menu -->
+                                    <!-- Category header: name + [...] menu -->
                                     <Expander.Header>
-                                        <Grid HorizontalAlignment="Stretch"
-                                              PointerEntered="CatHeader_PointerEntered"
-                                              PointerExited="CatHeader_PointerExited">
+                                        <Grid HorizontalAlignment="Stretch">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*" />
                                                 <ColumnDefinition Width="Auto" />
@@ -69,23 +80,17 @@
 
                                             <TextBlock Grid.Column="0"
                                                        Text="{x:Bind Name}"
-                                                       FontSize="13"
-                                                       FontWeight="SemiBold"
+                                                       Style="{StaticResource FC_CardHeaderStyle}"
                                                        TextTrimming="CharacterEllipsis"
                                                        ToolTipService.ToolTip="{x:Bind Name}"
                                                        VerticalAlignment="Center" />
 
-                                            <!-- [...] category actions; fades in on hover via code-behind -->
+                                            <!-- [...] category actions -->
                                             <Button x:Uid="BtnCategoryActions"
                                                     Grid.Column="1"
-                                                    Width="26" Height="26" Padding="0"
-                                                    Margin="8,0,0,0"
-                                                    Opacity="0">
-                                                <Button.Resources>
-                                                    <SolidColorBrush x:Key="ButtonBackground" Color="Transparent" />
-                                                    <SolidColorBrush x:Key="ButtonBorderBrush" Color="Transparent" />
-                                                </Button.Resources>
-                                                <FontIcon Glyph="&#xE712;" FontSize="13" />
+                                                    Style="{StaticResource FC_SubtleIconButton}"
+                                                    Margin="6,0,0,0">
+                                                <FontIcon Glyph="&#xE712;" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                                 <Button.Flyout>
                                                     <MenuFlyout Placement="Bottom">
                                                         <MenuFlyoutItem x:Uid="MenuSelectAll"
@@ -114,9 +119,7 @@
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate x:DataType="vm:CleanerEntryViewModel">
                                                 <!-- Three columns: [checkbox+name] [size after scan] [...] -->
-                                                <Grid Padding="2,1" Margin="16,0,0,0"
-                                                      PointerEntered="EntryRow_PointerEntered"
-                                                      PointerExited="EntryRow_PointerExited">
+                                                <Grid Padding="2,1" Margin="16,0,0,0">
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="*" />
                                                         <ColumnDefinition Width="Auto" /> <!-- size label -->
@@ -124,7 +127,7 @@
                                                     </Grid.ColumnDefinitions>
 
                                                     <!-- Checkbox; Warning tooltip from Winapp2.ini Warning= field.
-                                                         Orange icon appears when HasWarning is true. -->
+                                                         Warning icon appears when HasWarning is true. -->
                                                     <CheckBox Grid.Column="0"
                                                               IsChecked="{x:Bind IsSelected, Mode=TwoWay}"
                                                               ToolTipService.ToolTip="{x:Bind Warning}"
@@ -133,7 +136,7 @@
                                                         <StackPanel Orientation="Horizontal" Spacing="4">
                                                             <FontIcon Glyph="&#xE7BA;"
                                                                       FontSize="11"
-                                                                      Foreground="OrangeRed"
+                                                                      Foreground="{ThemeResource SystemFillColorCautionBrush}"
                                                                       VerticalAlignment="Center"
                                                                       Visibility="{x:Bind HasWarning, Converter={StaticResource BoolToVisibilityConverter}}" />
                                                             <TextBlock Text="{x:Bind Name}"
@@ -152,14 +155,13 @@
                                                                VerticalAlignment="Center"
                                                                Margin="2,0,4,0" />
 
-                                                    <!-- [...] entry actions;fades in on hover.
-                                                         Tag="{x:Bind}" passes this EntryViewModel to the click handlers. -->
+                                                    <!-- [...] entry actions -->
                                                     <Button x:Uid="BtnEntryActions"
                                                             Grid.Column="2"
-                                                            Width="22" Height="22" Padding="0"
-                                                            Margin="0,0,4,0"
-                                                            Opacity="0">
-                                                        <FontIcon Glyph="&#xE712;" FontSize="10" />
+                                                            Style="{StaticResource FC_SubtleIconButton}"
+                                                            MinWidth="24" MinHeight="24"
+                                                            Margin="0,0,2,0">
+                                                        <FontIcon Glyph="&#xE712;" FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                                         <Button.Flyout>
                                                             <MenuFlyout Placement="Bottom">
                                                                 <MenuFlyoutItem x:Uid="MenuAnalyzeEntry"
@@ -190,23 +192,22 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />   <!-- results header OR detail header -->
                     <RowDefinition Height="*" />       <!-- results list OR detail list -->
-                    <RowDefinition Height="Auto" />    <!-- status text -->
-                    <RowDefinition Height="Auto" />    <!-- Analyze / Run Cleaner buttons -->
+                    <RowDefinition Height="Auto" />    <!-- Unified status + action bar -->
                 </Grid.RowDefinitions>
 
-                <!-- real scan progress; ills per finished entry -->
-                <ProgressBar Grid.RowSpan="4"
+                <!-- real scan progress; fills per finished entry -->
+                <ProgressBar Grid.RowSpan="3"
                              VerticalAlignment="Top"
                              Maximum="100"
                              Value="{x:Bind ViewModel.ScanProgress, Mode=OneWay}"
                              Visibility="{x:Bind ViewModel.IsBusy, Mode=OneWay,
                                  Converter={StaticResource BoolToVisibilityConverter}}" />
-                <TextBlock Grid.RowSpan="4"
+                <TextBlock Grid.RowSpan="3"
                            VerticalAlignment="Top"
                            HorizontalAlignment="Center"
                            Margin="0,6,0,0"
-                           FontSize="11"
-                           Opacity="0.6"
+                           Style="{StaticResource FC_CaptionStyle}"
+                           Opacity="0.7"
                            Text="{x:Bind ViewModel.ProgressLabel, Mode=OneWay}"
                            Visibility="{x:Bind ViewModel.IsBusy, Mode=OneWay,
                                Converter={StaticResource BoolToVisibilityConverter}}" />
@@ -396,52 +397,50 @@
                     </ListView.ItemTemplate>
                 </ListView>
 
-                <!-- Status text: last message from the ViewModel (scan progress, errors, done) -->
-                <TextBlock Grid.Row="2"
-                           Text="{x:Bind ViewModel.StatusText, Mode=OneWay}"
-                           FontSize="11"
-                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                           TextTrimming="CharacterEllipsis"
-                           Padding="12,4,12,0" />
-
-                <!-- Action buttons: Analyze (accent, left) + Run Cleaner (right) -->
-                <Grid Grid.Row="3"
+                <!-- Bottom Action & Status Bar -->
+                <Grid Grid.Row="2"
                       BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
                       BorderThickness="0,1,0,0"
-                      Padding="12,8,12,12">
+                      Padding="14,10,14,12">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
-                    <!-- Analyze:visible when idle; morphs into Cancel once a scan/clean starts -->
-                    <Button x:Uid="BtnAnalyze"
-                            Grid.Column="0"
-                            Command="{x:Bind ViewModel.AnalyzeCommand}"
-                            Style="{StaticResource AccentButtonStyle}"
-                            Visibility="{x:Bind ViewModel.IsNotBusy, Mode=OneWay,
-                                Converter={StaticResource BoolToVisibilityConverter}}"
-                            MinWidth="110"
-                            Height="32" />
+                    <!-- Status text: last message from the ViewModel -->
+                    <TextBlock Grid.Column="0"
+                               Text="{x:Bind ViewModel.StatusText, Mode=OneWay}"
+                               Style="{StaticResource FC_CaptionStyle}"
+                               TextTrimming="CharacterEllipsis"
+                               VerticalAlignment="Center"
+                               Margin="0,0,12,0" />
 
-                    <!-- Cancel:same slot, only visible during an active scan or clean -->
-                    <Button x:Uid="BtnCancel"
-                            Grid.Column="0"
-                            Command="{x:Bind ViewModel.CancelCommand}"
-                            Visibility="{x:Bind ViewModel.IsBusy, Mode=OneWay,
-                                Converter={StaticResource BoolToVisibilityConverter}}"
-                            MinWidth="110"
-                            Height="32" />
+                    <!-- Action buttons -->
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                        <!-- Analyze: visible when idle; morphs into Cancel once a scan/clean starts -->
+                        <Button x:Uid="BtnAnalyze"
+                                Command="{x:Bind ViewModel.AnalyzeCommand}"
+                                Style="{StaticResource AccentButtonStyle}"
+                                Visibility="{x:Bind ViewModel.IsNotBusy, Mode=OneWay,
+                                    Converter={StaticResource BoolToVisibilityConverter}}"
+                                MinWidth="100"
+                                Height="32" />
 
-                    <!-- Run Cleaner:uses Click+code-behind because of the warning dialog flow.
-                         IsEnabled bound separately since Click bypasses Command.CanExecute. -->
-                    <Button x:Uid="BtnRunCleaner"
-                            Grid.Column="2"
-                            Click="RunCleaner_Click"
-                            IsEnabled="{x:Bind ViewModel.CanRunCleaner, Mode=OneWay}"
-                            MinWidth="120"
-                            Height="32" />
+                        <!-- Cancel: same slot, only visible during an active scan or clean -->
+                        <Button x:Uid="BtnCancel"
+                                Command="{x:Bind ViewModel.CancelCommand}"
+                                Visibility="{x:Bind ViewModel.IsBusy, Mode=OneWay,
+                                    Converter={StaticResource BoolToVisibilityConverter}}"
+                                MinWidth="100"
+                                Height="32" />
+
+                        <!-- Run Cleaner: uses Click+code-behind because of the warning dialog flow -->
+                        <Button x:Uid="BtnRunCleaner"
+                                Click="RunCleaner_Click"
+                                IsEnabled="{x:Bind ViewModel.CanRunCleaner, Mode=OneWay}"
+                                MinWidth="110"
+                                Height="32" />
+                    </StackPanel>
                 </Grid>
         </Grid>
     </Grid>

@@ -11,6 +11,64 @@
 
             <conv:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
             <conv:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
+
+            <!-- Layout & Shape Tokens -->
+            <CornerRadius x:Key="FC_CardCornerRadius">8</CornerRadius>
+            <CornerRadius x:Key="FC_ControlCornerRadius">4</CornerRadius>
+            <CornerRadius x:Key="FC_BadgeCornerRadius">4</CornerRadius>
+
+            <Thickness x:Key="FC_PagePadding">32,24,32,28</Thickness>
+            <Thickness x:Key="FC_CardPadding">16,14</Thickness>
+            <Thickness x:Key="FC_DenseCardPadding">14,10</Thickness>
+
+            <x:Double x:Key="FC_SectionSpacing">20</x:Double>
+            <x:Double x:Key="FC_CardSpacing">12</x:Double>
+            <x:Double x:Key="FC_StandardControlHeight">32</x:Double>
+
+            <!-- Typography Styles -->
+            <Style x:Key="FC_PageTitleStyle" TargetType="TextBlock" BasedOn="{StaticResource TitleTextBlockStyle}">
+                <Setter Property="Margin" Value="0,0,0,2" />
+            </Style>
+
+            <Style x:Key="FC_SectionHeaderStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="13.5" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="Foreground" Value="{ThemeResource TextFillColorPrimaryBrush}" />
+            </Style>
+
+            <Style x:Key="FC_CardHeaderStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="13" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="Foreground" Value="{ThemeResource TextFillColorPrimaryBrush}" />
+            </Style>
+
+            <Style x:Key="FC_BodyTextStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="13" />
+                <Setter Property="Foreground" Value="{ThemeResource TextFillColorPrimaryBrush}" />
+            </Style>
+
+            <Style x:Key="FC_SubtextStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="12" />
+                <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+            </Style>
+
+            <Style x:Key="FC_CaptionStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="11" />
+                <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+            </Style>
+
+            <!-- Subtle Icon Button Style -->
+            <Style x:Key="FC_SubtleIconButton" TargetType="Button">
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderBrush" Value="Transparent" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="CornerRadius" Value="{StaticResource FC_ControlCornerRadius}" />
+                <Setter Property="Padding" Value="4" />
+                <Setter Property="MinWidth" Value="28" />
+                <Setter Property="MinHeight" Value="28" />
+                <Setter Property="HorizontalAlignment" Value="Center" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

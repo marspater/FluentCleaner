@@ -17,12 +17,20 @@ public class ExcludeKeyEntry
     public ExcludeType Type { get; set; }
 
     // Base path of the exclusion. May contain %EnvVar% tokens.
-    public string Path { get; set; } = "";
+    public string Path
+    {
+        get => field;
+        set => field = value?.Trim() ?? "";
+    } = "";
 
     /* Optional filename or pattern within Path (e.g. "places.sqlite" or "*.db").
        When set, only that specific file is excluded and not the whole directory.
        When null, the entire directory is excluded (PATH-style behaviour). */
-    public string? Pattern { get; set; }
+    public string? Pattern
+    {
+        get => field;
+        set => field = string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
 
     public static ExcludeKeyEntry Parse(string value)
     {
@@ -39,13 +47,8 @@ public class ExcludeKeyEntry
                 _      => ExcludeType.File
             };
         }
-        if (parts.Length > 1) entry.Path = parts[1].Trim();
-        if (parts.Length > 2)
-        {
-            var pattern = parts[2].Trim();
-            if (!string.IsNullOrWhiteSpace(pattern))
-                entry.Pattern = pattern;
-        }
+        if (parts.Length > 1) entry.Path = parts[1];
+        if (parts.Length > 2) entry.Pattern = parts[2];
 
         return entry;
     }

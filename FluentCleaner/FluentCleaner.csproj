@@ -3,25 +3,21 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <WindowsSdkPackageVersion>10.0.26100.56</WindowsSdkPackageVersion>
     <AssemblyName>FCleaner</AssemblyName>
     <RootNamespace>FluentCleaner</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <Platforms>x64;arm64</Platforms>
     <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
-    <RuntimeIdentifier Condition="'$(Platform)' == 'x64'">win-x64</RuntimeIdentifier>
-    <RuntimeIdentifier Condition="'$(Platform)' == 'ARM64'">win-arm64</RuntimeIdentifier>
-    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">win-x64</RuntimeIdentifier>
     <UseWinUI>true</UseWinUI>
     <WindowsPackageType>None</WindowsPackageType>
-    <WindowsAppSDKSelfContained>false</WindowsAppSDKSelfContained>
-    <WindowsAppSdkBootstrapInitialize>false</WindowsAppSdkBootstrapInitialize>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
     <DefaultLanguage>en-US</DefaultLanguage>
     <DefaultResourceLanguage>en-US</DefaultResourceLanguage>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <DefineConstants>DISABLE_XAML_GENERATED_MAIN;$(DefineConstants)</DefineConstants>
-    <DisableXamlGeneratedMain>true</DisableXamlGeneratedMain>
-    <StartupObject>FluentCleaner.Program</StartupObject>
+    <DefineConstants>DISABLE_XAML_GENERATED_MAIN</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -35,15 +31,9 @@
     <Manifest Include="$(ApplicationManifest)" />
   </ItemGroup>
 
-  <!-- Localization: every Strings/{lang}/Resources.resw is compiled into the .pri for       -->
-  <!-- XAML x:Uid resolution. The glob auto-includes any new language folder on the next      -->
-  <!-- build — just drop a Strings/{lang}/Resources.resw and rebuild; no edits needed here.   -->
   <ItemGroup>
     <PRIResource Include="Strings\**\*.resw" />
   </ItemGroup>
-  <!-- Also deploy the raw resw folders next to the exe. The strings still come from the .pri; -->
-  <!-- these copies exist only so the language dropdown can discover available languages at    -->
-  <!-- runtime by scanning Strings\{lang}\ (ResourceService.GetAvailableLanguages).            -->
   <ItemGroup>
     <Content Include="Strings\**\*.resw">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

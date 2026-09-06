@@ -13,66 +13,88 @@ public partial class App : Application
 
     public App()
     {
-        //Language must be applied BEFORE InitializeComponent so WinUI reads it once at startup
+        AppDomain.CurrentDomain.UnhandledException += (s, e) =>
+        {
+            LogException("AppDomain.UnhandledException", e.ExceptionObject as Exception);
+        };
+
+        TaskScheduler.UnobservedTaskException += (s, e) =>
+        {
+            LogException("TaskScheduler.UnobservedTaskException", e.Exception);
+            e.SetObserved();
+        };
+
         try
         {
             var lang = AppSettings.Instance.Language;
             if (!string.IsNullOrWhiteSpace(lang))
                 Microsoft.Windows.Globalization.ApplicationLanguages.PrimaryLanguageOverride = lang;
         }
-        catch { /* if resources broken, let app keep running in default language */ }
+        catch { }
 
         InitializeComponent();
 
         UnhandledException += (_, e) =>
         {
             e.Handled = true; // prevent silent 0xC000027B process termination
+            LogException("Application.UnhandledException", e.Exception);
             System.Diagnostics.Debug.WriteLine($"[UnhandledException] {e.Exception}");
         };
     }
 
-    //Entry point;load settings, build the window, wire everything up.
+    private static void LogException(string source, Exception? ex)
+    {
+        try
+        {
+            var logFile = System.IO.Path.Combine(AppContext.BaseDirectory, "app_error.log");
+            System.IO.File.AppendAllText(logFile, $"[{DateTime.Now}] {source}: {ex}\nMessage: {ex?.Message}\n{ex?.StackTrace}\n---\n");
+        }
+        catch { }
+    }
+
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
-
-        AppSettings.Reload();
-
-        //force language for code-side strings (CLI, status messages, dialogs)
-        // XAML x:Uid strings always follow the Windows display language
-        ResourceService.SetLanguage(AppSettings.Instance.Language);
-
-        // SilentRunner headless clean, no window; /SHUTDOWN shuts down after
-        var cmdArgs = Environment.GetCommandLineArgs();
-        bool isAuto     = cmdArgs.Any(a => a.Equals("/AUTO",     StringComparison.OrdinalIgnoreCase));
-        bool isShutdown = cmdArgs.Any(a => a.Equals("/SHUTDOWN", StringComparison.OrdinalIgnoreCase));
-
-        if (isAuto)
+        try
         {
-            _ = SilentRunner.RunAsync(isShutdown);
-            return;
+            AppSettings.Reload();
+
+            ResourceService.SetLanguage(AppSettings.Instance.Language);
+
+            var cmdArgs = Environment.GetCommandLineArgs();
+            bool isAuto     = cmdArgs.Any(a => a.Equals("/AUTO",     StringComparison.OrdinalIgnoreCase));
+            bool isShutdown = cmdArgs.Any(a => a.Equals("/SHUTDOWN", StringComparison.OrdinalIgnoreCase));
+
+            if (isAuto)
+            {
+                _ = SilentRunner.RunAsync(isShutdown);
+                return;
+            }
+
+            MainWindow = new MainWindow();
+            SetupTitleBar();
+            RestoreWindowSize();
+            ApplyBackdrop(AppSettings.Instance.Backdrop);
+            ApplyTheme(AppSettings.Instance.Theme);
+            MainWindow.Activate();
+
+            MainWindow.Closed += (_, _) =>
+            {
+                var size = MainWindow.AppWindow.Size;
+                if (size.Width >= 600 && size.Height >= 400)
+                {
+                    AppSettings.Instance.WindowWidth  = size.Width;
+                    AppSettings.Instance.WindowHeight = size.Height;
+                    AppSettings.Instance.Save();
+                }
+            };
         }
-
-        MainWindow = new MainWindow();
-        SetupTitleBar();
-        RestoreWindowSize();
-        ApplyBackdrop(AppSettings.Instance.Backdrop);
-        ApplyTheme(AppSettings.Instance.Theme);
-        MainWindow.Activate();
-
-        //Remember size for next launch
-        MainWindow.Closed += (_, _) =>
+        catch (Exception ex)
         {
-            var size = MainWindow.AppWindow.Size;
-            AppSettings.Instance.WindowWidth  = size.Width;
-            AppSettings.Instance.WindowHeight = size.Height;
-            AppSettings.Instance.Save();
-        };
+            LogException("OnLaunched", ex);
+            throw;
+        }
     }
-    // idea from John Gage Faulkner's WinUI3SampleStarterApp
-    // https://github.com/johngagefaulkner/WinUI3SampleStarterApp
-    // remove idle background only;so it lets TitleBar blend with Mica
-    // don't touch hover/pressed, PreferredTheme handles it
-    // overriding all states breaks hover (learned that the hard way)
+
     private void SetupTitleBar()
     {
         if (AppWindowTitleBar.IsCustomizationSupported())
@@ -83,23 +105,30 @@ public partial class App : Application
         }
     }
 
-    //Picks up the saved size from settings, falls back to 960x620 on first run
     private void RestoreWindowSize()
     {
-        var w = AppSettings.Instance.WindowWidth;
-        var h = AppSettings.Instance.WindowHeight;
-        MainWindow!.AppWindow.Resize(new SizeInt32(w, h));
-
-        if (DisplayArea.GetFromWindowId(MainWindow.AppWindow.Id, DisplayAreaFallback.Primary) is { } display)
+        if (DisplayArea.GetFromWindowId(MainWindow!.AppWindow.Id, DisplayAreaFallback.Primary) is { } display)
         {
             var area = display.WorkArea;
-            MainWindow.AppWindow.Move(new PointInt32(
-                area.X + (area.Width  - w) / 2,
-                area.Y + (area.Height - h) / 2));
+            int maxW = Math.Max(600, area.Width - 40);
+            int maxH = Math.Max(400, area.Height - 40);
+
+            int w = Math.Clamp(AppSettings.Instance.WindowWidth, 600, maxW);
+            int h = Math.Clamp(AppSettings.Instance.WindowHeight, 400, maxH);
+
+            MainWindow.AppWindow.Resize(new SizeInt32(w, h));
+
+            int posX = area.X + Math.Max(0, (area.Width - w) / 2);
+            int posY = area.Y + Math.Max(0, (area.Height - h) / 2);
+
+            MainWindow.AppWindow.Move(new PointInt32(posX, posY));
+        }
+        else
+        {
+            MainWindow.AppWindow.Resize(new SizeInt32(960, 620));
         }
     }
 
-    // Switches light/dark/system 
     public void ApplyTheme(string? theme)
     {
         var elementTheme = theme switch
@@ -122,7 +151,6 @@ public partial class App : Application
         };
     }
 
-    // Mica by default, acrylic if the user set it via terminal. No Settings UI for this on purpose
     public void ApplyBackdrop(string? backdrop)
     {
         if (MainWindow is null) return;

@@ -20,16 +20,16 @@
                      Visibility="{x:Bind ViewModel.IsBusy, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}" />
 
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-            <StackPanel Margin="32,26,32,32" Spacing="22" HorizontalAlignment="Stretch">
+            <StackPanel Margin="{StaticResource FC_PagePadding}" Spacing="{StaticResource FC_SectionSpacing}" HorizontalAlignment="Stretch">
                 
-                <TextBlock Text="Workspace Purge" Style="{StaticResource TitleTextBlockStyle}" />
+                <TextBlock Text="Workspace Purge" Style="{StaticResource FC_PageTitleStyle}" />
 
                 <StackPanel Spacing="10">
-                    <TextBlock Text="Configuration" FontSize="13" FontWeight="SemiBold" />
+                    <TextBlock Text="Configuration" Style="{StaticResource FC_SectionHeaderStyle}" />
                     
                     <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                             BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                            BorderThickness="1" CornerRadius="8" Padding="18,14">
+                            BorderThickness="1" CornerRadius="{StaticResource FC_CardCornerRadius}" Padding="{StaticResource FC_CardPadding}">
                         <StackPanel Spacing="14">
                             <Grid ColumnSpacing="12">
                                 <Grid.ColumnDefinitions>
@@ -84,7 +84,7 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="Discovered Build Directories" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="0" Text="Discovered Build Directories" Style="{StaticResource FC_SectionHeaderStyle}" VerticalAlignment="Center" />
                         <CheckBox Grid.Column="1" Content="Select all"
                                   IsChecked="{x:Bind ViewModel.SelectAll, Mode=TwoWay}"
                                   IsEnabled="{x:Bind ViewModel.IsNotBusy, Mode=OneWay}"
@@ -93,7 +93,7 @@
 
                     <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                             BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                            BorderThickness="1" CornerRadius="8">
+                            BorderThickness="1" CornerRadius="{StaticResource FC_CardCornerRadius}">
                         <ListView ItemsSource="{x:Bind ViewModel.TrashDirectories, Mode=OneWay}"
                                   SelectionMode="None"
                                   Padding="0,4">
@@ -106,7 +106,17 @@
                             </ListView.ItemContainerStyle>
                             <ListView.ItemTemplate>
                                 <DataTemplate x:DataType="vm:TrashDirectoryViewModel">
-                                    <Grid Padding="18,10" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="0,0,0,1">
+                                    <Grid Padding="16,10" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="0,0,0,1">
+                                        <Grid.ContextFlyout>
+                                            <MenuFlyout>
+                                                <MenuFlyoutItem Text="Open in Explorer" Tag="{x:Bind Path}" Click="OpenExplorer_Click">
+                                                    <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8DA;" /></MenuFlyoutItem.Icon>
+                                                </MenuFlyoutItem>
+                                                <MenuFlyoutItem Text="Copy path" Tag="{x:Bind Path}" Click="CopyPath_Click">
+                                                    <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8C8;" /></MenuFlyoutItem.Icon>
+                                                </MenuFlyoutItem>
+                                            </MenuFlyout>
+                                        </Grid.ContextFlyout>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="Auto" />
@@ -118,15 +128,14 @@
                                                   MinWidth="0"
                                                   Padding="8,0,0,0">
                                             <StackPanel Spacing="1" VerticalAlignment="Center">
-                                                <TextBlock Text="{x:Bind FolderName}" FontWeight="SemiBold" FontSize="12.5" />
-                                                <TextBlock Text="{x:Bind ParentPath}" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock Text="{x:Bind FolderName}" Style="{StaticResource FC_CardHeaderStyle}" />
+                                                <TextBlock Text="{x:Bind ParentPath}" Style="{StaticResource FC_CaptionStyle}" TextTrimming="CharacterEllipsis" />
                                             </StackPanel>
                                         </CheckBox>
 
                                         <TextBlock Grid.Column="1"
                                                    Text="{x:Bind SizeText, Mode=OneWay}"
-                                                   FontSize="12"
-                                                   FontWeight="SemiBold"
+                                                   Style="{StaticResource FC_CardHeaderStyle}"
                                                    Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
                                                    VerticalAlignment="Center"
                                                    Margin="12,0,4,0" />
@@ -139,7 +148,7 @@
 
                 <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                         BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                        BorderThickness="1" CornerRadius="8" Padding="18,14">
+                        BorderThickness="1" CornerRadius="{StaticResource FC_CardCornerRadius}" Padding="{StaticResource FC_CardPadding}">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
@@ -148,8 +157,7 @@
                         
                         <TextBlock Grid.Column="0"
                                    Text="{x:Bind ViewModel.StatusText, Mode=OneWay}"
-                                   FontSize="12"
-                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                   Style="{StaticResource FC_SubtextStyle}"
                                    VerticalAlignment="Center"
                                    TextWrapping="WrapWholeWords"
                                    Margin="0,0,12,0" />
@@ -157,7 +165,8 @@
                         <Button Grid.Column="1"
                                 Content="Nuke Selected"
                                 Style="{StaticResource AccentButtonStyle}"
-                                Command="{x:Bind ViewModel.NukeCommand}"
+                                Click="NukeButton_Click"
+                                IsEnabled="{x:Bind ViewModel.IsNotBusy, Mode=OneWay}"
                                 MinWidth="120"
                                 Height="32" />
                     </Grid>
