@@ -64,7 +64,7 @@ public partial class SettingsPageViewModel : ObservableObject
 
     // Language dropdown — populated at runtime from the deployed Strings\{lang}\ folders.
     public ObservableCollection<LanguageOption> Languages { get; } = [];
-    [ObservableProperty] public partial LanguageOption? SelectedLanguage { get; set; };
+    [ObservableProperty] public partial LanguageOption? SelectedLanguage { get; set; }
     [ObservableProperty] public partial bool   IsPortable { get; set; }         // true when settings.json sits next to exe
 
     private bool _refreshing;
