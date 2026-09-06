@@ -33,7 +33,7 @@ public class CliCleanerModule
             all.AddRange(await _parser.ParseFileAsync(path));
 
         all      = all.DistinctBy(e => e.Name, StringComparer.OrdinalIgnoreCase).ToList();
-        _entries = await Task.Run(() => all.Where(_detection.IsInstalled).ToList());
+        _entries = await Task.Run(() => all.AsParallel().Where(_detection.IsInstalled).ToList());
 
         return (paths.Count, _entries.Count);
     }
