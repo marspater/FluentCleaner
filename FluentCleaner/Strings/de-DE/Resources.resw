@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
@@ -83,18 +83,6 @@
   <data name="DlgWarningMessage"><value>Die ausgewählten Winapp2-Einträge enthalten folgende Warnungen:</value></data>
   <data name="DlgExplainThinking"><value>Analysiere…</value></data>
   <data name="DlgExplainClose"><value>Schließen</value></data>
-  <data name="DlgSourceCopy"><value>Kopieren</value></data>
-  <data name="DlgSourceReport"><value>Eintrag melden</value></data>
-  <data name="DlgSourceDryRun"><value>Testlauf</value></data>
-  <data name="RuleLabTitle"><value>Rule Lab — {0}</value></data>
-  <data name="DlgSourceHint"><value>Regeln anpassen, dann Testlauf für die Vorschau.</value></data>
-  <data name="DlgSourceScanning"><value>Scanne…</value></data>
-  <data name="DlgSourceNoEntry"><value>Kein gültiger Eintrag — braucht ein Detect und einen FileKey.</value></data>
-  <data name="DlgSourceFound"><value>{0} Dateien · {1}</value></data>
-  <data name="DlgSourceMore"><value>… und {0} weitere</value></data>
-  <data name="DlgSourceError"><value>Scan fehlgeschlagen: {0}</value></data>
-  <data name="DlgSourceCancel"><value>Abbrechen</value></data>
-  <data name="DlgSourceCancelled"><value>Abgebrochen.</value></data>
   <data name="DlgRestartTitle"><value>Neustart erforderlich</value></data>
   <data name="DlgRestartMessage"><value>Um die Änderungen anzuwenden, muss FluentCleaner neu gestartet werden.</value></data>
   <data name="DlgRestartNow"><value>Jetzt neu starten</value></data>

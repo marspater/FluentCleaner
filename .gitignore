@@ -35,6 +35,7 @@ bld/
 [Ll]ogs/
 build_output.txt
 priconfig.xml
+*.log
 
 # Build results on 'Bin' directories
 **/[Bb]in/*

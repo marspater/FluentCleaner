@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
@@ -88,18 +88,6 @@
   <data name="DlgWarningMessage"><value>Pasirinktuose „Winapp2“ įrašuose yra šie įspėjimai:</value></data>
   <data name="DlgExplainThinking"><value>Galvoju…</value></data>
   <data name="DlgExplainClose"><value>Uždaryti</value></data>
-  <data name="DlgSourceCopy"><value>Kopijuoti</value></data>
-  <data name="DlgSourceReport"><value>Pranešti apie įrašą</value></data>
-  <data name="DlgSourceDryRun"><value>Bandomasis paleidimas</value></data>
-  <data name="RuleLabTitle"><value>Taisyklių laboratorija — {0}</value></data>
-  <data name="DlgSourceHint"><value>Redaguokite taisykles, panaudokite funkciją „Bandomasis paleidimas“, kad peržiūrėtumėte atitikimus.</value></data>
-  <data name="DlgSourceScanning"><value>Skenuojama…</value></data>
-  <data name="DlgSourceNoEntry"><value>Nėra galiojančio įrašo — reikia „Detect“ ir „FileKey“.</value></data>
-  <data name="DlgSourceFound"><value>{0} failas(-ų) · {1}</value></data>
-  <data name="DlgSourceMore"><value>… ir {0} daugiau</value></data>
-  <data name="DlgSourceError"><value>Skenavimas nepavyko: {0}</value></data>
-  <data name="DlgSourceCancel"><value>Atšaukti</value></data>
-  <data name="DlgSourceCancelled"><value>Atšaukta.</value></data>
   <data name="DlgRestartTitle"><value>Reikia paleisti iš naujo</value></data>
   <data name="DlgRestartMessage"><value>Kad pakeitimai įsigaliotų, reikia iš naujo paleisti „FluentCleaner“.</value></data>
   <data name="DlgRestartNow"><value>Paleisti iš naujo</value></data>

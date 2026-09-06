@@ -1,5 +1,3 @@
-using System.Reflection;
-
 namespace FluentCleaner.Tools;
 
 // Temporary container filled by ReadMetadataFromScript; immediately unpacked into ToolsDefinition.
