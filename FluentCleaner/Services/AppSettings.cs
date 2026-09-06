@@ -59,9 +59,11 @@ public class AppSettings
     // backdrop style;terminal-only tweak, no Settings UI on purpose
     public string Backdrop { get; set; } = "mica";
 
-    // remembered window size;restored on next launch
+    // remembered window geometry;restored on next launch
     public int WindowWidth  { get; set; } = 960;
     public int WindowHeight { get; set; } = 620;
+    public int? WindowX     { get; set; } = null;
+    public int? WindowY     { get; set; } = null;
 
     //Junk growth tracker;logged after every successful clean run
     public bool CleanHistoryEnabled { get; set; } = true;

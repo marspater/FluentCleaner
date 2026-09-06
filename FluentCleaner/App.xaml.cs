@@ -116,7 +116,7 @@ public partial class App : Application
             MainWindow = new MainWindow();
             Program.LogDiag("[BOOT] MainWindow instantiated.");
 
-            // Safe application of window decorations (cosmetic failures must never block window activation)
+            // TitleBar customization
             try
             {
                 SetupTitleBar();
@@ -127,16 +127,22 @@ public partial class App : Application
                 Program.LogDiag($"[BOOT-WARN] SetupTitleBar failed: {ex.Message}");
             }
 
+            // Window icon configuration
             try
             {
-                RestoreWindowSize();
-                Program.LogDiag("[BOOT] Window size restored.");
+                var iconPath = System.IO.Path.Combine(AppContext.BaseDirectory, "Assets", "AppIcon.ico");
+                if (System.IO.File.Exists(iconPath))
+                {
+                    MainWindow.AppWindow.SetIcon(iconPath);
+                    Program.LogDiag("[BOOT] AppWindow icon set.");
+                }
             }
             catch (Exception ex)
             {
-                Program.LogDiag($"[BOOT-WARN] RestoreWindowSize failed: {ex.Message}");
+                Program.LogDiag($"[BOOT-WARN] SetIcon failed: {ex.Message}");
             }
 
+            // Backdrop
             try
             {
                 ApplyBackdrop(AppSettings.Instance.Backdrop);
@@ -147,6 +153,7 @@ public partial class App : Application
                 Program.LogDiag($"[BOOT-WARN] ApplyBackdrop failed: {ex.Message}");
             }
 
+            // Theme
             try
             {
                 ApplyTheme(AppSettings.Instance.Theme);
@@ -157,19 +164,37 @@ public partial class App : Application
                 Program.LogDiag($"[BOOT-WARN] ApplyTheme failed: {ex.Message}");
             }
 
+            // Robust geometry restoration
+            try
+            {
+                RestoreWindowSize();
+                Program.LogDiag("[BOOT] Window size restored.");
+            }
+            catch (Exception ex)
+            {
+                Program.LogDiag($"[BOOT-WARN] RestoreWindowSize failed: {ex.Message}");
+            }
+
             Program.LogDiag("[BOOT] Calling MainWindow.Activate()...");
             MainWindow.Activate();
             _isWindowActivated = true;
             Program.LogDiag("[BOOT] MainWindow ACTIVATED successfully. UI is live.");
 
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(MainWindow);
+            WindowDiagnostics.EnsureForeground(hwnd);
+            WindowDiagnostics.InspectWindow(MainWindow, "Startup complete");
+
             MainWindow.Closed += (_, _) =>
             {
                 Program.LogDiag("[LIFECYCLE] MainWindow.Closed triggered.");
                 var size = MainWindow.AppWindow.Size;
+                var pos = MainWindow.AppWindow.Position;
                 if (size.Width >= 600 && size.Height >= 400)
                 {
                     AppSettings.Instance.WindowWidth  = size.Width;
                     AppSettings.Instance.WindowHeight = size.Height;
+                    AppSettings.Instance.WindowX      = pos.X;
+                    AppSettings.Instance.WindowY      = pos.Y;
                     AppSettings.Instance.Save();
                 }
             };
@@ -194,25 +219,67 @@ public partial class App : Application
 
     private void RestoreWindowSize()
     {
-        if (DisplayArea.GetFromWindowId(MainWindow!.AppWindow.Id, DisplayAreaFallback.Primary) is { } display)
+        try
         {
-            var area = display.WorkArea;
-            int maxW = Math.Max(600, area.Width - 40);
-            int maxH = Math.Max(400, area.Height - 40);
+            var primary = DisplayArea.Primary;
+            var primaryWorkArea = primary?.WorkArea ?? new RectInt32(0, 0, 1920, 1080);
 
-            int w = Math.Clamp(AppSettings.Instance.WindowWidth, 600, maxW);
-            int h = Math.Clamp(AppSettings.Instance.WindowHeight, 400, maxH);
+            int savedW = AppSettings.Instance.WindowWidth;
+            int savedH = AppSettings.Instance.WindowHeight;
+            int? savedX = AppSettings.Instance.WindowX;
+            int? savedY = AppSettings.Instance.WindowY;
 
-            MainWindow.AppWindow.Resize(new SizeInt32(w, h));
+            // Safe size constraints
+            if (savedW < 600 || savedW > 16384) savedW = 960;
+            if (savedH < 400 || savedH > 16384) savedH = 620;
 
-            int posX = area.X + Math.Max(0, (area.Width - w) / 2);
-            int posY = area.Y + Math.Max(0, (area.Height - h) / 2);
+            DisplayArea? targetDisplay = null;
 
-            MainWindow.AppWindow.Move(new PointInt32(posX, posY));
+            // Check if saved position lands on any active display
+            if (savedX.HasValue && savedY.HasValue)
+            {
+                var point = new PointInt32(savedX.Value, savedY.Value);
+                targetDisplay = DisplayArea.GetFromPoint(point, DisplayAreaFallback.None);
+            }
+
+            if (targetDisplay == null)
+            {
+                // Fallback to primary display and center
+                targetDisplay = primary;
+                var area = targetDisplay?.WorkArea ?? primaryWorkArea;
+                int w = Math.Clamp(savedW, 600, Math.Max(600, area.Width - 40));
+                int h = Math.Clamp(savedH, 400, Math.Max(400, area.Height - 40));
+                int posX = area.X + Math.Max(0, (area.Width - w) / 2);
+                int posY = area.Y + Math.Max(0, (area.Height - h) / 2);
+
+                MainWindow!.AppWindow.Resize(new SizeInt32(w, h));
+                MainWindow!.AppWindow.Move(new PointInt32(posX, posY));
+                Program.LogDiag($"[GEOMETRY] Centered on primary display: pos=({posX},{posY}), size=({w}x{h})");
+            }
+            else
+            {
+                var area = targetDisplay.WorkArea;
+                int w = Math.Clamp(savedW, 600, Math.Max(600, area.Width - 40));
+                int h = Math.Clamp(savedH, 400, Math.Max(400, area.Height - 40));
+
+                // Ensure at least 100px of title bar is inside the display's work area
+                int minX = area.X - w + 100;
+                int maxX = area.X + area.Width - 100;
+                int minY = area.Y;
+                int maxY = area.Y + area.Height - 50;
+
+                int posX = Math.Clamp(savedX!.Value, minX, maxX);
+                int posY = Math.Clamp(savedY!.Value, minY, maxY);
+
+                MainWindow!.AppWindow.Resize(new SizeInt32(w, h));
+                MainWindow!.AppWindow.Move(new PointInt32(posX, posY));
+                Program.LogDiag($"[GEOMETRY] Restored saved geometry on display {targetDisplay.DisplayId.Value}: pos=({posX},{posY}), size=({w}x{h})");
+            }
         }
-        else
+        catch (Exception ex)
         {
-            MainWindow.AppWindow.Resize(new SizeInt32(960, 620));
+            Program.LogDiag($"[GEOMETRY-WARN] RestoreWindowSize failed, using safe defaults: {ex.Message}");
+            MainWindow!.AppWindow.Resize(new SizeInt32(960, 620));
         }
     }
 
