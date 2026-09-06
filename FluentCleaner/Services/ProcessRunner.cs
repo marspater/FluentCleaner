@@ -63,7 +63,7 @@ public static class ProcessRunner
         }
 
         // Fallback: Split at first space/tab if any, or return trimmed as binary path
-        int firstSpaceIndex = trimmed.IndexOfAny([' ', '	']);
+        int firstSpaceIndex = trimmed.IndexOfAny([' ', '\t']);
         if (firstSpaceIndex >= 0)
         {
             string fileName = trimmed[..firstSpaceIndex].Trim();
@@ -84,7 +84,7 @@ public static class ProcessRunner
         for (int i = trimmed.Length - 1; i >= 0; i--)
         {
             char c = trimmed[i];
-            if (c == ' ' || c == '	')
+            if (c == ' ' || c == '\t')
             {
                 string fileName = trimmed[..i].Trim();
                 string arguments = trimmed[(i + 1)..].Trim();

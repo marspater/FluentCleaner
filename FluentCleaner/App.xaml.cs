@@ -239,11 +239,11 @@ public partial class App : Application
 
             DisplayArea? targetDisplay = null;
 
-            // Check if saved position lands on any active display
+            // Check if saved rectangle intersects any active display
             if (savedX.HasValue && savedY.HasValue)
             {
-                var point = new PointInt32(savedX.Value, savedY.Value);
-                targetDisplay = DisplayArea.GetFromPoint(point, DisplayAreaFallback.None);
+                var rect = new RectInt32(savedX.Value, savedY.Value, savedW, savedH);
+                targetDisplay = DisplayArea.GetFromRect(rect, DisplayAreaFallback.None);
             }
 
             if (targetDisplay == null)
@@ -266,11 +266,11 @@ public partial class App : Application
                 int w = Math.Clamp(savedW, 600, Math.Max(600, area.Width - 40));
                 int h = Math.Clamp(savedH, 400, Math.Max(400, area.Height - 40));
 
-                // Ensure at least 100px of title bar is inside the display's work area
-                int minX = area.X - w + 100;
-                int maxX = area.X + area.Width - 100;
+                // Fully contain the window within the display's work area
+                int minX = area.X;
+                int maxX = Math.Max(area.X, area.X + area.Width - w);
                 int minY = area.Y;
-                int maxY = area.Y + area.Height - 50;
+                int maxY = Math.Max(area.Y, area.Y + area.Height - h);
 
                 int posX = Math.Clamp(savedX!.Value, minX, maxX);
                 int posY = Math.Clamp(savedY!.Value, minY, maxY);

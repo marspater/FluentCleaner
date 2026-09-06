@@ -162,6 +162,7 @@ public class CustomEntryServiceTests : IDisposable
         Assert.Equal("DUPLICATE APP", result[0].Name, ignoreCase: true);
         Assert.Equal("file2.tmp", result[0].FileKeys[0].Pattern);
     }
+
     [Theory]
     [InlineData("test_script.ps1", true)]
     [InlineData("../evil.ps1", false)]
