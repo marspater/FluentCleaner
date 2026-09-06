@@ -334,9 +334,18 @@ public partial class DeveloperCleanupViewModel : ObservableObject
                 }
             }
         }
-        catch (UnauthorizedAccessException) { }
-        catch (DirectoryNotFoundException) { }
-        catch (Exception) { }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or DirectoryNotFoundException or IOException or System.Security.SecurityException)
+        {
+            System.Diagnostics.Debug.WriteLine($"[DeveloperCleanupViewModel.ScanDirectory] Access/IO issue scanning '{path}': {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[DeveloperCleanupViewModel.ScanDirectory] Unexpected error scanning '{path}': {ex.Message}");
+        }
     }
 
     private async Task CalculateSizesAsync(CancellationToken token)
