@@ -46,7 +46,7 @@ public class DeveloperCleanupViewModelTests
             Assert.False(Directory.Exists(nodeModulesDir));
             Assert.False(Directory.Exists(binDir));
             Assert.True(Directory.Exists(normalDir));
-            Assert.Equal(0, vm.TrashDirectories.Count);
+            Assert.Empty(vm.TrashDirectories);
         }
         finally
         {
@@ -85,7 +85,7 @@ public class DeveloperCleanupViewModelTests
             await vm.NukeCommand.ExecuteAsync(null);
 
             Assert.False(Directory.Exists(targetDir));
-            Assert.Equal(0, vm.TrashDirectories.Count);
+            Assert.Empty(vm.TrashDirectories);
         }
         finally
         {
