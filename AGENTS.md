@@ -27,7 +27,7 @@ Preferred restore:
 `dotnet restore FluentCleaner.slnx`
 
 Tests:
-`dotnet test FluentCleaner.slnx --configuration Release`
+`dotnet test FluentCleaner.slnx --configuration Release -p:Platform=x64`
 
 Windows build:
 `dotnet build FluentCleaner.slnx --configuration Release -p:Platform=x64`

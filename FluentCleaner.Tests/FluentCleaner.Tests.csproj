@@ -8,6 +8,8 @@
     <WindowsPackageType>None</WindowsPackageType>
     <EnableMsixTooling>false</EnableMsixTooling>
     <WindowsSdkPackageVersion>10.0.26100.56</WindowsSdkPackageVersion>
+    <Platforms>x64;arm64</Platforms>
+    <Platform Condition="'$(Platform)' == ''">x64</Platform>
   </PropertyGroup>
 
   <ItemGroup>

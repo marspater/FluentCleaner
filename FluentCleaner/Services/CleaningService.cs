@@ -11,7 +11,7 @@ namespace FluentCleaner.Services;
    Analyze ; walks FileKeys/RegKeys, builds a deletion list without touching anything
               Locked files (held open without FILE_SHARE_DELETE) are silently skipped, matching CCleaner behavior
    Clean   ; takes the completed ScanResult and does the actual deleting. */
-public partial class CleaningService(PathExpander? expander = null)
+public class CleaningService(PathExpander? expander = null)
 {
     private readonly PathExpander _expander = expander ?? new();
 
@@ -334,8 +334,8 @@ public partial class CleaningService(PathExpander? expander = null)
 
     // --- P/Invoke -------------------------------------------------
 
-    [LibraryImport("kernel32.dll", EntryPoint = "CreateFileW", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)]
-    private static partial SafeFileHandle CreateFileW(
+    [DllImport("kernel32.dll", EntryPoint = "CreateFileW", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern SafeFileHandle CreateFileW(
         string lpFileName, uint dwDesiredAccess, uint dwShareMode,
         IntPtr lpSecurityAttributes, uint dwCreationDisposition,
         uint dwFlagsAndAttributes, IntPtr hTemplateFile);

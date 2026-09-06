@@ -33,6 +33,7 @@ bld/
 [Oo]ut/
 [Ll]og/
 [Ll]ogs/
+[Tt]est[Rr]esults/
 build_output.txt
 priconfig.xml
 *.log
