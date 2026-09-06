@@ -724,13 +724,25 @@ public partial class CleanerPageViewModel : ObservableObject
             cat.IsExpanded = value;
     }
 
+    private HashSet<string> GetInitialSelectedSet()
+    {
+        if (AppSettings.Instance.SelectedEntries is { } currentSelected)
+            return new HashSet<string>(currentSelected, StringComparer.OrdinalIgnoreCase);
+
+        var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var entry in _loadedEntries)
+        {
+            if (entry.Default)
+                set.Add(entry.Name);
+        }
+        return set;
+    }
+
     private void SaveSelection()
     {
         if (_suppressSave) return;
 
-        var selected = AppSettings.Instance.SelectedEntries is not null
-            ? AppSettings.Instance.SelectedEntries.ToHashSet(StringComparer.OrdinalIgnoreCase)
-            : _loadedEntries.Where(e => e.Default).Select(e => e.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var selected = GetInitialSelectedSet();
 
         foreach (var entry in FlatEntries)
         {
@@ -754,9 +766,7 @@ public partial class CleanerPageViewModel : ObservableObject
 
         //No custom selection saved yet >> seed from Winapp2 defaults so the first
         //manual toggle doesn't wipe every entry that was on by default
-        var selected = AppSettings.Instance.SelectedEntries is not null
-            ? AppSettings.Instance.SelectedEntries.ToHashSet(StringComparer.OrdinalIgnoreCase)
-            : _loadedEntries.Where(e => e.Default).Select(e => e.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var selected = GetInitialSelectedSet();
 
         if (entry.IsSelected) selected.Add(entry.Name);
         else                  selected.Remove(entry.Name);
