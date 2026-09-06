@@ -51,5 +51,29 @@ namespace FluentCleaner.Tests.Services
                 SecretStore.DeleteSecret(secretName);
             }
         }
+
+        [Fact]
+        public void SaveSecret_TraversalAndReservedNames_AreStoredSafely()
+        {
+            var traversalName = "../../TraverseSecret_" + Guid.NewGuid().ToString("N");
+            var reservedName = "CON";
+            var secretValue = "secret-payload-987";
+
+            try
+            {
+                SecretStore.SaveSecret(traversalName, secretValue);
+                var loaded = SecretStore.LoadSecret(traversalName);
+                Assert.Equal(secretValue, loaded);
+
+                SecretStore.SaveSecret(reservedName, secretValue);
+                var loadedReserved = SecretStore.LoadSecret(reservedName);
+                Assert.Equal(secretValue, loadedReserved);
+            }
+            finally
+            {
+                SecretStore.DeleteSecret(traversalName);
+                SecretStore.DeleteSecret(reservedName);
+            }
+        }
     }
 }

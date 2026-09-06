@@ -71,6 +71,12 @@ public static class AppxService
     // Returns true when PowerShell exits with code 0 (package gone or never existed).
     public static async Task<bool> RemoveAsync(AppxEntry entry)
     {
+        if (!SecurityGuard.IsValidPackageName(entry.PackageName))
+        {
+            Debug.WriteLine($"[AppxService.RemoveAsync] Rejected invalid package name: {entry.PackageName}");
+            return false;
+        }
+
         var exitCode = await RunPsAsync(
             $"Get-AppxPackage -Name '*{entry.PackageName}*' | Remove-AppxPackage");
         return exitCode == 0;
@@ -98,7 +104,7 @@ public static class AppxService
         return output;
     }
 
-    private static ProcessStartInfo BuildPsi(string command) => new("powershell.exe",
+    private static ProcessStartInfo BuildPsi(string command) => new(SecurityGuard.GetSafePowerShellPath(),
         $"-NoProfile -ExecutionPolicy Bypass -Command \"{command.Replace("\"", "\\\"")}\"")
     {
         UseShellExecute = false,

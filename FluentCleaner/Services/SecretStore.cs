@@ -26,10 +26,11 @@ public static class SecretStore
             return;
         }
 
+        byte[]? plainBytes = null;
         try
         {
             Directory.CreateDirectory(SecretDir);
-            var plainBytes = Encoding.UTF8.GetBytes(secret);
+            plainBytes = Encoding.UTF8.GetBytes(secret);
 
             byte[] outputBytes;
             if (OperatingSystem.IsWindows())
@@ -39,14 +40,26 @@ public static class SecretStore
             else
             {
                 // Fallback for non-Windows (testing/cross-platform)
-                outputBytes = plainBytes;
+                outputBytes = (byte[])plainBytes.Clone();
             }
 
             File.WriteAllBytes(filePath, outputBytes);
+
+            // Clean up legacy file if it still exists
+            var legacy = GetLegacyFilePath(name);
+            if (legacy is not null && !string.Equals(legacy, filePath, StringComparison.OrdinalIgnoreCase) && File.Exists(legacy))
+            {
+                try { File.Delete(legacy); } catch { }
+            }
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"[SecretStore] Failed to save secret '{name}': {ex}");
+        }
+        finally
+        {
+            if (plainBytes is not null)
+                System.Security.Cryptography.CryptographicOperations.ZeroMemory(plainBytes);
         }
     }
 
@@ -57,13 +70,30 @@ public static class SecretStore
 
         var filePath = GetSecretFilePath(name);
         if (!File.Exists(filePath))
-            return null;
+        {
+            var legacyPath = GetLegacyFilePath(name);
+            if (legacyPath is not null && File.Exists(legacyPath))
+            {
+                try
+                {
+                    File.Move(legacyPath, filePath, overwrite: true);
+                }
+                catch
+                {
+                    filePath = legacyPath;
+                }
+            }
+            else
+            {
+                return null;
+            }
+        }
 
+        byte[]? plainBytes = null;
         try
         {
             var inputBytes = File.ReadAllBytes(filePath);
 
-            byte[] plainBytes;
             if (OperatingSystem.IsWindows())
             {
                 plainBytes = UnprotectData(inputBytes);
@@ -81,6 +111,11 @@ public static class SecretStore
             System.Diagnostics.Debug.WriteLine($"[SecretStore] Failed to load secret '{name}': {ex}");
             return null;
         }
+        finally
+        {
+            if (plainBytes is not null)
+                System.Security.Cryptography.CryptographicOperations.ZeroMemory(plainBytes);
+        }
     }
 
     public static void DeleteSecret(string name)
@@ -91,9 +126,11 @@ public static class SecretStore
         try
         {
             if (File.Exists(filePath))
-            {
                 File.Delete(filePath);
-            }
+
+            var legacy = GetLegacyFilePath(name);
+            if (legacy is not null && File.Exists(legacy))
+                File.Delete(legacy);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
         {
@@ -103,8 +140,30 @@ public static class SecretStore
 
     private static string GetSecretFilePath(string name)
     {
-        var safeName = string.Join("_", name.Split(Path.GetInvalidFileNameChars()));
-        return Path.Combine(SecretDir, $"{safeName}.dat");
+        var hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(name.Trim())));
+        var primaryPath = Path.Combine(SecretDir, $"{hash}.dat");
+
+        var fullPath = Path.GetFullPath(primaryPath);
+        var fullSecretDir = Path.GetFullPath(SecretDir);
+        if (!fullPath.StartsWith(fullSecretDir, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("Invalid secret path.");
+
+        return primaryPath;
+    }
+
+    private static string? GetLegacyFilePath(string name)
+    {
+        try
+        {
+            var safeName = string.Join("_", name.Split(Path.GetInvalidFileNameChars()));
+            var legacyPath = Path.Combine(SecretDir, $"{safeName}.dat");
+            var fullPath = Path.GetFullPath(legacyPath);
+            var fullSecretDir = Path.GetFullPath(SecretDir);
+            if (fullPath.StartsWith(fullSecretDir, StringComparison.OrdinalIgnoreCase) && File.Exists(legacyPath))
+                return legacyPath;
+        }
+        catch { }
+        return null;
     }
 
     #region Win32 DPAPI P/Invoke
@@ -191,7 +250,14 @@ public static class SecretStore
         finally
         {
             if (pin.IsAllocated) pin.Free();
-            if (outBlob.pbData != IntPtr.Zero) LocalFree(outBlob.pbData);
+            if (outBlob.pbData != IntPtr.Zero)
+            {
+                unsafe
+                {
+                    new Span<byte>((void*)outBlob.pbData, outBlob.cbData).Clear();
+                }
+                LocalFree(outBlob.pbData);
+            }
         }
     }
 

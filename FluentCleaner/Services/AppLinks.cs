@@ -19,6 +19,13 @@ public static class AppLinks
 
     public static async Task OpenAsync(string url)
     {
-        await Windows.System.Launcher.LaunchUriAsync(new Uri(url));
+        if (SecurityGuard.IsValidWebUrl(url))
+        {
+            await Windows.System.Launcher.LaunchUriAsync(new Uri(url));
+        }
+        else
+        {
+            System.Diagnostics.Debug.WriteLine($"[AppLinks.OpenAsync] Blocked non-web URL: {url}");
+        }
     }
 }

@@ -9,13 +9,13 @@ namespace FluentCleaner.Services;
 
 /* Two-phase clean cycle:
    Analyze ; walks FileKeys/RegKeys, builds a deletion list without touching anything
-             Locked files (held open without FILE_SHARE_DELETE) are silently skipped, i tried here matching the CCleaner behavior
+              Locked files (held open without FILE_SHARE_DELETE) are silently skipped, matching CCleaner behavior
    Clean   ; takes the completed ScanResult and does the actual deleting. */
-public class CleaningService
+public partial class CleaningService(PathExpander? expander = null)
 {
-    private readonly PathExpander _expander = new();
+    private readonly PathExpander _expander = expander ?? new();
 
-    // --- Public api --------------------------------------------------
+    // --- Public API --------------------------------------------------
     public Task<ScanResult> AnalyzeAsync(CleanerEntry entry, IProgress<string>? progress = null, CancellationToken token = default)
         => Task.Run(() => Analyze(entry, progress, token), token);
 
@@ -25,7 +25,7 @@ public class CleaningService
     // --- Analyze --------------------------------------------------
 
     /* Read-only phase. Walks FileKeys and RegKeys, builds the deletion list, touches nothing.
-       Locked files get skipped here too;they'd fail at delete time anyway and would just
+       Locked files get skipped here too; they'd fail at delete time anyway and would just
        inflate the reported size for no reason. */
     private ScanResult Analyze(CleanerEntry entry, IProgress<string>? progress, CancellationToken token = default)
     {
@@ -34,14 +34,13 @@ public class CleaningService
         var filesToDeleteSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         // Wrap the caller's progress so every path report is prefixed with the entry name.
-        // e.g. "Firefox Cache >>C:\Users\...\Cache\Cache_Data"
-        // PrefixedProgress delegates to the original Progress<T> which already captured the
-        // UI sync context, so the callback still safely lands on the UI thread.
+        // e.g. "Firefox Cache >> C:\Users\...\Cache\Cache_Data"
         IProgress<string>? entryProgress = progress is null ? null
             : new PrefixedProgress(entry.Name, progress);
 
         foreach (var fileKey in entry.FileKeys)
         {
+            token.ThrowIfCancellationRequested();
             try
             {
                 foreach (var file in FindFiles(fileKey, excluded, entryProgress, token))
@@ -57,12 +56,13 @@ public class CleaningService
                     result.TotalBytes += size;
                 }
             }
-            catch (OperationCanceledException) { throw; }  //cancel must reach the caller, not get swallowed
+            catch (OperationCanceledException) { throw; }  // cancel must reach the caller
             catch (Exception ex) { Debug.WriteLine($"[CleaningService.Analyze] Error processing file key {fileKey.Path}: {ex.Message}"); }
         }
 
         foreach (var regKey in entry.RegKeys)
         {
+            token.ThrowIfCancellationRequested();
             try { result.RegistryToDelete.AddRange(FindRegistryItems(regKey)); }
             catch (Exception ex) { Debug.WriteLine($"[CleaningService.Analyze] Error processing registry key {regKey.KeyPath}: {ex.Message}"); }
         }
@@ -81,7 +81,13 @@ public class CleaningService
 
         foreach (var dir in _expander.ResolvePaths(fileKey.Path))
         {
+            token.ThrowIfCancellationRequested();
             if (!Directory.Exists(dir)) continue;
+            if (!SecurityGuard.IsSafeDeletionPath(dir))
+            {
+                Debug.WriteLine($"[CleaningService.FindFiles] Skipping unsafe deletion path: {dir}");
+                continue;
+            }
             progress?.Report(dir);
 
             foreach (var f in EnumerateFilesSafe(dir, patterns, recurse, progress, token))
@@ -91,36 +97,35 @@ public class CleaningService
     }
 
     /* Walks the tree once; lets the OS match files per pattern (FindFirstFile knows about
-       8.3 short-name aliases,we don't). HashSet drops files that match more than one pattern.
-       Reparse points skipped;Windows ships with fun traps like
-     C:\Users\All Users >> C:\ProgramData >> All Users >>....forever */
+       8.3 short-name aliases, we don't). HashSet drops files that match more than one pattern.
+       Reparse points skipped to prevent infinite junction loop traps. */
     private static IEnumerable<string> EnumerateFilesSafe(string root, string[] patterns, bool recurse, IProgress<string>? progress = null, CancellationToken token = default)
     {
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var p in patterns)
         {
+            token.ThrowIfCancellationRequested();
             IEnumerable<string> files;
             try { files = Directory.EnumerateFiles(root, p); }
             catch (Exception ex) { Debug.WriteLine($"[CleaningService.EnumerateFilesSafe] Error enumerating files in {root} with pattern {p}: {ex.Message}"); files = []; }
             foreach (var f in files)
-                if (seen.Add(f))   //skip if another pattern already matched this file
+                if (seen.Add(f))   // skip if another pattern already matched this file
                     yield return f;
         }
 
         if (!recurse) yield break;
 
         IEnumerable<string> dirs;
-        // Skip reparse points (junctions & symlinks);Windows ships with traps like
-        //C:\Users\All Users >> C:\ProgramData >>> All Users >>...forever ;)
-        //Real content is always reachable via the canonical path;no need to follow aliases
         try
-        { dirs = Directory.EnumerateDirectories(root)
-                              .Where(d => (File.GetAttributes(d) & FileAttributes.ReparsePoint) == 0); }
+        {
+            dirs = Directory.EnumerateDirectories(root)
+                            .Where(d => (File.GetAttributes(d) & FileAttributes.ReparsePoint) == 0);
+        }
         catch (Exception ex) { Debug.WriteLine($"[CleaningService.EnumerateFilesSafe] Error enumerating directories in {root}: {ex.Message}"); yield break; }
 
         foreach (var sub in dirs)
         {
-            token.ThrowIfCancellationRequested(); //one check per folder is enough;no need to go per-file
+            token.ThrowIfCancellationRequested(); // check per sub-folder
             progress?.Report(sub);
             foreach (var f in EnumerateFilesSafe(sub, patterns, recurse: true, progress, token))
                 yield return f;
@@ -130,8 +135,14 @@ public class CleaningService
     // Checks whether a registry key/value exists before queuing it for deletion
     private static IEnumerable<RegistryItemToDelete> FindRegistryItems(RegKeyEntry regKey)
     {
-        var (hive, subKey) = SplitHiveSubKey(regKey.KeyPath);
-        using var root = OpenHive(hive);
+        var (hive, subKey) = RegistryHelper.SplitHiveSubKey(regKey.KeyPath);
+        if (!SecurityGuard.IsSafeRegistryDeletion(hive, subKey, regKey.ValueName))
+        {
+            Debug.WriteLine($"[CleaningService.FindRegistryItems] Skipping unsafe registry target: {regKey.KeyPath}");
+            yield break;
+        }
+
+        using var root = RegistryHelper.OpenHive(hive);
         if (root is null) yield break;
 
         using var key = root.OpenSubKey(subKey, writable: false);
@@ -139,13 +150,11 @@ public class CleaningService
 
         if (regKey.ValueName is not null)
         {
-            // Only queue the specific value, not the whole key.
             if (key.GetValue(regKey.ValueName) is not null)
                 yield return new RegistryItemToDelete { KeyPath = regKey.KeyPath, ValueName = regKey.ValueName };
         }
         else
         {
-            // No value name; queue the entire key for deletion.
             yield return new RegistryItemToDelete { KeyPath = regKey.KeyPath };
         }
     }
@@ -153,8 +162,8 @@ public class CleaningService
     // --- Clean ----------------------------------------------------
 
     /* Deletes everything the Analyze phase queued up.
-       Files that are in use or already gone get skipped silently;no point in spamming errors. 
-     Also returns the count of successfully deleted items and the total bytes freed.*/
+       Files that are in use or already gone get skipped silently.
+       Returns the count of successfully deleted items and the total bytes freed. */
     private (int count, long bytes) Clean(ScanResult result, IProgress<string>? progress, CancellationToken token = default)
     {
         int  count = 0;
@@ -162,26 +171,33 @@ public class CleaningService
 
         foreach (var file in result.FilesToDelete)
         {
-            token.ThrowIfCancellationRequested(); //stop between files so we never delete half an entry
+            token.ThrowIfCancellationRequested(); // stop between files so we never delete half an entry
             try
             {
-                var size = new FileInfo(file).Length;
-                File.Delete(file);
+                var fi = new FileInfo(file);
+                if (!fi.Exists) continue;
+                var size = fi.Length;
+                if (fi.IsReadOnly)
+                    fi.IsReadOnly = false;
+                fi.Delete();
                 count++;
                 bytes += size;
                 progress?.Report(ResourceService.Fmt("Prog_Deleted", file));
             }
-            catch (Exception ex) { Debug.WriteLine($"[CleaningService.Clean] Failed to delete file {file}: {ex.Message}"); } //in use or already gone; skip silently
+            catch (OperationCanceledException) { throw; }
+            catch (Exception ex) { Debug.WriteLine($"[CleaningService.Clean] Failed to delete file {file}: {ex.Message}"); }
         }
 
         foreach (var regItem in result.RegistryToDelete)
         {
+            token.ThrowIfCancellationRequested();
             try
             {
                 DeleteRegistryItem(regItem);
                 count++;
                 progress?.Report(ResourceService.Fmt("Prog_Registry", regItem));
             }
+            catch (OperationCanceledException) { throw; }
             catch (Exception ex) { Debug.WriteLine($"[CleaningService.Clean] Failed to delete registry item {regItem.KeyPath}: {ex.Message}"); }
         }
 
@@ -197,41 +213,46 @@ public class CleaningService
        ValueName is set. Both paths are no-ops if the target no longer exists. */
     private static void DeleteRegistryItem(RegistryItemToDelete item)
     {
-        var (hive, subKey) = SplitHiveSubKey(item.KeyPath);
-        using var root = OpenHive(hive);
+        var (hive, subKey) = RegistryHelper.SplitHiveSubKey(item.KeyPath);
+        if (!SecurityGuard.IsSafeRegistryDeletion(hive, subKey, item.ValueName))
+        {
+            Debug.WriteLine($"[CleaningService.DeleteRegistryItem] Skipping unsafe registry deletion: {item.KeyPath}");
+            return;
+        }
+
+        using var root = RegistryHelper.OpenHive(hive);
         if (root is null) return;
 
         if (item.ValueName is not null)
         {
             using var key = root.OpenSubKey(subKey, writable: true);
-            key?.DeleteValue(item.ValueName, throwOnMissingValue: false); //only delete the value, not the whole key
+            key?.DeleteValue(item.ValueName, throwOnMissingValue: false);
         }
         else
         {
             var parentSubKey = Path.GetDirectoryName(subKey)?.Replace('/', '\\') ?? "";
             var keyName      = Path.GetFileName(subKey);
             using var parent = root.OpenSubKey(parentSubKey, writable: true);
-            parent?.DeleteSubKeyTree(keyName, throwOnMissingSubKey: false); // delete the whole key tree; if it's already gone, skip silently
+            parent?.DeleteSubKeyTree(keyName, throwOnMissingSubKey: false);
         }
     }
 
     /* Cleans up empty folders left behind by a REMOVESELF clean.
-       Order matters: deepest first, so parent directories become empty before we try to delete them.
-       The root folder itself is deleted last if it ends up empty too. */
+       Order matters: deepest first, so parent directories become empty before we try to delete them. */
     private static void TryPruneEmptyDirs(string path)
     {
-        if (!Directory.Exists(path)) return;
+        if (!Directory.Exists(path) || !SecurityGuard.IsSafeDeletionPath(path)) return;
         try
         {
             foreach (var sub in Directory.GetDirectories(path, "*", SearchOption.AllDirectories)
                                          .OrderByDescending(d => d.Length))
             {
+                if (!SecurityGuard.IsSafeDeletionPath(sub)) continue;
                 if (Directory.GetFileSystemEntries(sub).Length == 0)
                     Directory.Delete(sub);
             }
 
-            //Delete the root folder itself if it's now empty
-            if (Directory.GetFileSystemEntries(path).Length == 0)
+            if (SecurityGuard.IsSafeDeletionPath(path) && Directory.GetFileSystemEntries(path).Length == 0)
                 Directory.Delete(path);
         }
         catch (Exception ex) { Debug.WriteLine($"[CleaningService.TryPruneEmptyDirs] Failed to prune empty directories in {path}: {ex.Message}"); }
@@ -239,18 +260,13 @@ public class CleaningService
 
     // --- Helpers --------------------------------------------------
 
-    /* Turns the entry's ExcludeKey lines into rules we can actually match against during the scan.
-       REG exclusions are skipped here;they don't apply to file paths anyway.
-       Global exclusions from Settings are layered on top — they override everything. */
     private List<ExclusionRule> BuildExclusions(CleanerEntry entry)
     {
         var rules = new List<ExclusionRule>();
 
-        // per-entry ExcludeKeys from the INI
         foreach (var ex in entry.ExcludeKeys)
             AddRule(ex, rules);
 
-        // app-level exclusions;so this are the paths the user never wants touched, regardless of INI
         var settings = AppSettings.Instance;
         if (settings.GlobalExclusionsEnabled)
             foreach (var line in settings.GlobalExclusions)
@@ -267,10 +283,6 @@ public class CleaningService
     }
 
     // Probe whether a file is deletable right now by requesting DELETE access via CreateFileW.
-    // If another process holds it open without FILE_SHARE_DELETE, this fails and we skip it.
-    // Yes, theres a TOCTOU gap between Analyze and Clean;file state can change in between
-    // Worst case: we report a slightly off size or try to delete something that moved. Both are caught silently.
-    //The goal here is simply to avoid counting files that are already undeletable right now
     private static long TryGetDeletableSize(string path)
     {
         const uint DELETE = 0x00010000;
@@ -285,7 +297,6 @@ public class CleaningService
         catch (Exception ex) { Debug.WriteLine($"[CleaningService.TryGetDeletableSize] Failed to get length of {path}: {ex.Message}"); return -1; }
     }
 
-    // True if any rule matches;short-circuits on the first hit
     private static bool IsExcluded(string path, List<ExclusionRule> rules)
     {
         foreach (var rule in rules)
@@ -294,30 +305,8 @@ public class CleaningService
         return false;
     }
 
-    // Splits "HKCU\Software\Foo" into ("HKCU", "Software\Foo").
-    private static (string hive, string subKey) SplitHiveSubKey(string path)
-    {
-        var idx = path.IndexOf('\\');
-        return idx < 0 ? (path.ToUpperInvariant(), "") : (path[..idx].ToUpperInvariant(), path[(idx + 1)..]);
-    }
-
-    // Shared with DetectionService; maps hive abbreviations to registry root keys. Yeah, a shared RegistryHelper would be cleaner, but im too lazy here
-    internal static RegistryKey? OpenHive(string hive) => hive switch
-    {
-        "HKCU" or "HKEY_CURRENT_USER"   => Registry.CurrentUser,
-        "HKLM" or "HKEY_LOCAL_MACHINE"  => Registry.LocalMachine,
-        "HKU"  or "HKEY_USERS"          => Registry.Users,
-        "HKCC" or "HKEY_CURRENT_CONFIG" => Registry.CurrentConfig,
-        "HKCR" or "HKEY_CLASSES_ROOT"   => Registry.ClassesRoot,
-        _ => null
-    };
-
     // --- Nested Types ---------------------------------------------
 
-    /* One rule parsed from an ExcludeKeyN= line.
-       DirPrefix always ends with '\' so "Cache\" doesn't accidentally swallow "CacheExtra\".
-     Pattern is the optional filename filter (e.g. "*.db", "readme.pdf").
-       No pattern means the entire directory subtree is excluded. */
     private readonly record struct ExclusionRule(string DirPrefix, string? Pattern)
     {
         public bool Matches(string filePath)
@@ -325,28 +314,19 @@ public class CleaningService
             if (!filePath.StartsWith(DirPrefix, StringComparison.OrdinalIgnoreCase))
                 return false;
 
-            // No pattern > whole directory tree is excluded.
             if (Pattern is null) return true;
 
-            // Wildcard pattern > glob-match against just the filename, covering the whole subtree.
-            // e.g. PATH|_Instances\|*.db  : every .db file anywhere under _Instances\
-            //      PATH|_Instances\|*     : every file anywhere under _Instances\
             if (Pattern.Contains('*') || Pattern.Contains('?'))
             {
                 var fileName = Path.GetFileName(filePath);
                 return FileSystemName.MatchesSimpleExpression(Pattern, fileName, ignoreCase: true);
             }
 
-            // Literal pattern > the file must be a direct child of DirPrefix, not deeper.
-            // e.g. FILE|docs\|readme.pdf > protects docs\readme.pdf but NOT docs\sub\readme.pdf
             var relativePath = filePath[DirPrefix.Length..];
             return relativePath.Equals(Pattern, StringComparison.OrdinalIgnoreCase);
         }
     }
 
-    /* Tiny wrapper that just prepends the entry name to every progress message.
-       The inner Progress<T> already grabbed the UI sync context, so no threading magic needed here;
-       this is purely a string-prefix transform. */
     private sealed class PrefixedProgress(string prefix, IProgress<string> inner) : IProgress<string>
     {
         public void Report(string path) => inner.Report($"{prefix}  ›  {path}");
@@ -354,8 +334,8 @@ public class CleaningService
 
     // --- P/Invoke -------------------------------------------------
 
-    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-    private static extern SafeFileHandle CreateFileW(
+    [LibraryImport("kernel32.dll", EntryPoint = "CreateFileW", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)]
+    private static partial SafeFileHandle CreateFileW(
         string lpFileName, uint dwDesiredAccess, uint dwShareMode,
         IntPtr lpSecurityAttributes, uint dwCreationDisposition,
         uint dwFlagsAndAttributes, IntPtr hTemplateFile);
