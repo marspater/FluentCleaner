@@ -23,10 +23,20 @@ public sealed partial class CleanerPage : Page, ISearchablePage, IPageActions
             if (_loaded) return;
             _loaded = true;
 
-            AppSettings.Reload();
-            var paths = AppSettings.Instance.ResolveDatabasePaths().ToList();
-            if (paths.Count == 0) paths.Add(Path.Combine(AppContext.BaseDirectory, "Winapp2.ini"));
-            await ViewModel.LoadWinapp2Async(paths);
+            try
+            {
+                Program.LogDiag("[BOOT-CLEANERPAGE] Loaded handler started.");
+                AppSettings.Reload();
+                var paths = AppSettings.Instance.ResolveDatabasePaths().ToList();
+                if (paths.Count == 0) paths.Add(Path.Combine(AppContext.BaseDirectory, "Winapp2.ini"));
+                Program.LogDiag($"[BOOT-CLEANERPAGE] Loading {paths.Count} database paths...");
+                await ViewModel.LoadWinapp2Async(paths);
+                Program.LogDiag("[BOOT-CLEANERPAGE] LoadWinapp2Async completed.");
+            }
+            catch (Exception ex)
+            {
+                Program.LogDiag($"[BOOT-CLEANERPAGE-ERROR] Exception in Loaded handler: {ex}");
+            }
         };
     }
 

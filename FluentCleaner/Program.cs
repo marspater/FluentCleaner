@@ -16,6 +16,7 @@ public static class Program
     {
         LogDiag("[STARTUP] FluentCleaner starting...");
         LogDiag($"[STARTUP] BaseDirectory: {AppContext.BaseDirectory}");
+        AppDomain.CurrentDomain.ProcessExit += (_, _) => LogDiag("[SHUTDOWN] ProcessExit event fired.");
 
         try
         {

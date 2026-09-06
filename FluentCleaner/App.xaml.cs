@@ -164,6 +164,7 @@ public partial class App : Application
 
             MainWindow.Closed += (_, _) =>
             {
+                Program.LogDiag("[LIFECYCLE] MainWindow.Closed triggered.");
                 var size = MainWindow.AppWindow.Size;
                 if (size.Width >= 600 && size.Height >= 400)
                 {
