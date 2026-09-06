@@ -423,16 +423,15 @@ public sealed partial class ToolsPage : Page, ISearchablePage
             {
                 WorkingDirectory = AppContext.BaseDirectory
             };
+            psi.UseShellExecute = false;
             if (useConsole)
             {
                 psi.ArgumentList.Add("-NoExit");
-                psi.UseShellExecute = true;
             }
             else
             {
                 psi.RedirectStandardOutput = true;
                 psi.RedirectStandardError = true;
-                psi.UseShellExecute = false;
                 psi.CreateNoWindow = true;
             }
 
