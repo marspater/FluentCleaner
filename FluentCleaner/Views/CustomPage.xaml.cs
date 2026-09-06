@@ -267,28 +267,27 @@ public sealed partial class CustomPage : Page, IPageActions, ISearchablePage
         void Report(string line) =>
             DispatcherQueue.TryEnqueue(() => lblStatus.Text = line);
 
-        // Pipe script content via stdin so PowerShell doesn't need -File
-        string scriptContent;
-        try   { scriptContent = await File.ReadAllTextAsync(vm.FilePath); }
-        catch (Exception ex)
+        if (!File.Exists(fullScript))
         {
-            lblStatus.Text = ResourceService.Fmt("St_CustomScriptError", vm.Name, ex.Message);
+            lblStatus.Text = ResourceService.Fmt("St_CustomScriptError", vm.Name, "File not found.");
             return;
         }
 
         try
         {
-            var psi = new System.Diagnostics.ProcessStartInfo(
-                SecurityGuard.GetSafePowerShellPath(),
-                "-NoProfile -ExecutionPolicy Bypass -Command -")
+            var psi = new System.Diagnostics.ProcessStartInfo(SecurityGuard.GetSafePowerShellPath())
             {
                 WorkingDirectory       = AppContext.BaseDirectory,
-                RedirectStandardInput  = true,
                 RedirectStandardOutput = true,
                 RedirectStandardError  = true,
                 UseShellExecute        = false,
                 CreateNoWindow         = true
             };
+            psi.ArgumentList.Add("-NoProfile");
+            psi.ArgumentList.Add("-ExecutionPolicy");
+            psi.ArgumentList.Add("Bypass");
+            psi.ArgumentList.Add("-File");
+            psi.ArgumentList.Add(fullScript);
 
             using var p = new System.Diagnostics.Process { StartInfo = psi };
             p.OutputDataReceived += (_, ev) => { if (ev.Data is not null) Report(ev.Data); };
@@ -296,10 +295,6 @@ public sealed partial class CustomPage : Page, IPageActions, ISearchablePage
             p.Start();
             p.BeginOutputReadLine();
             p.BeginErrorReadLine();
-
-            // Write the script to stdin and close the stream so PowerShell knows we're done
-            await p.StandardInput.WriteAsync(scriptContent);
-            p.StandardInput.Close();
 
             await p.WaitForExitAsync();
             exitCode = p.ExitCode;
