@@ -234,9 +234,13 @@ public partial class DeveloperCleanupViewModel : ObservableObject
                         }
                     }
                     catch (OperationCanceledException) { throw; }
-                    catch (Exception)
+                    catch (Exception ex) when (ex is UnauthorizedAccessException or DirectoryNotFoundException or IOException or System.Security.SecurityException)
                     {
-                        // Skip if locked or access denied
+                        System.Diagnostics.Debug.WriteLine($"[DeveloperCleanupViewModel.NukeAsync] Skipped directory {item.Path}: {ex.Message}");
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[DeveloperCleanupViewModel.NukeAsync] Unexpected error deleting directory {item.Path}: {ex}");
                     }
                 }
             }, token);
@@ -284,10 +288,26 @@ public partial class DeveloperCleanupViewModel : ObservableObject
                     if (file.IsReadOnly)
                         file.IsReadOnly = false;
                 }
-                catch { }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception ex) when (ex is UnauthorizedAccessException or DirectoryNotFoundException or IOException or System.Security.SecurityException)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[DeveloperCleanupViewModel.DeleteDirectoryRecursiveSafe] Error resetting read-only attribute on file {file.FullName}: {ex.Message}");
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[DeveloperCleanupViewModel.DeleteDirectoryRecursiveSafe] Unexpected error resetting read-only attribute on file {file.FullName}: {ex}");
+                }
             }
         }
-        catch { }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or DirectoryNotFoundException or IOException or System.Security.SecurityException)
+        {
+            System.Diagnostics.Debug.WriteLine($"[DeveloperCleanupViewModel.DeleteDirectoryRecursiveSafe] Error enumerating files in directory {path}: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[DeveloperCleanupViewModel.DeleteDirectoryRecursiveSafe] Unexpected error enumerating files in directory {path}: {ex}");
+        }
 
         di.Delete(true);
     }
@@ -308,7 +328,17 @@ public partial class DeveloperCleanupViewModel : ObservableObject
                     if ((File.GetAttributes(dir) & FileAttributes.ReparsePoint) != 0)
                         continue;
                 }
-                catch { continue; }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception ex) when (ex is UnauthorizedAccessException or DirectoryNotFoundException or IOException or System.Security.SecurityException)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[DeveloperCleanupViewModel.ScanDirectory] Error checking attributes for {dir}: {ex.Message}");
+                    continue;
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[DeveloperCleanupViewModel.ScanDirectory] Unexpected error checking attributes for {dir}: {ex}");
+                    continue;
+                }
 
                 var name = Path.GetFileName(dir);
                 
@@ -334,9 +364,15 @@ public partial class DeveloperCleanupViewModel : ObservableObject
                 }
             }
         }
-        catch (UnauthorizedAccessException) { }
-        catch (DirectoryNotFoundException) { }
-        catch (Exception) { }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or DirectoryNotFoundException or IOException or System.Security.SecurityException)
+        {
+            System.Diagnostics.Debug.WriteLine($"[DeveloperCleanupViewModel.ScanDirectory] Error enumerating directories in {path}: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[DeveloperCleanupViewModel.ScanDirectory] Unexpected error enumerating directories in {path}: {ex}");
+        }
     }
 
     private async Task CalculateSizesAsync(CancellationToken token)
@@ -358,8 +394,9 @@ public partial class DeveloperCleanupViewModel : ObservableObject
                 item.SizeText = "Cancelled";
                 break;
             }
-            catch
+            catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine($"[DeveloperCleanupViewModel.CalculateSizesAsync] Error calculating size for {item.Path}: {ex.Message}");
                 item.SizeText = "Unknown";
             }
         }
@@ -376,7 +413,19 @@ public partial class DeveloperCleanupViewModel : ObservableObject
             foreach (var fi in di.EnumerateFiles())
             {
                 token.ThrowIfCancellationRequested();
-                try { size += fi.Length; } catch { }
+                try
+                {
+                    size += fi.Length;
+                }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception ex) when (ex is UnauthorizedAccessException or DirectoryNotFoundException or IOException or System.Security.SecurityException)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[DeveloperCleanupViewModel.CalculateDirectorySize] Error reading file length for {fi.FullName}: {ex.Message}");
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[DeveloperCleanupViewModel.CalculateDirectorySize] Unexpected error reading file length for {fi.FullName}: {ex}");
+                }
             }
 
             foreach (var sub in di.EnumerateDirectories())
@@ -386,7 +435,15 @@ public partial class DeveloperCleanupViewModel : ObservableObject
                 size += CalculateDirectorySize(sub.FullName, token);
             }
         }
-        catch { }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or DirectoryNotFoundException or IOException or System.Security.SecurityException)
+        {
+            System.Diagnostics.Debug.WriteLine($"[DeveloperCleanupViewModel.CalculateDirectorySize] Error accessing directory {path}: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[DeveloperCleanupViewModel.CalculateDirectorySize] Unexpected error accessing directory {path}: {ex}");
+        }
         return size;
     }
 }
