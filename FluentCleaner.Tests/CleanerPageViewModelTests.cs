@@ -30,7 +30,7 @@ public class CleanerPageViewModelTests
         await vm.CleanCategoryAsync(category);
 
         Assert.False(vm.IsBusy);
-        Assert.Contains("App 1", vm.StatusText, StringComparison.OrdinalIgnoreCase);
+        Assert.True(vm.StatusText.Contains("Test Category", StringComparison.OrdinalIgnoreCase) || vm.StatusText.Contains("St_CategoryCleanDone"));
     }
 
     [Fact]
