@@ -208,10 +208,9 @@
                                            VerticalAlignment="Center" />
                             </StackPanel>
                             <!-- more-options flyout (...) -->
-                            <Button HorizontalAlignment="Right" VerticalAlignment="Center"
-                                    Style="{StaticResource FC_SubtleIconButton}"
-                                    ToolTipService.ToolTip="More options"
-                                    AutomationProperties.Name="More options">
+                            <Button x:Uid="BtnOutputMoreActions"
+                                    HorizontalAlignment="Right" VerticalAlignment="Center"
+                                    Style="{StaticResource FC_SubtleIconButton}">
                                 <FontIcon Glyph="&#xE712;" FontSize="14" />
                                 <Button.Flyout>
                                     <MenuFlyout Placement="BottomEdgeAlignedRight">
