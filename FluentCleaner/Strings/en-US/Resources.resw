@@ -245,6 +245,8 @@
   <data name="BtnRunScript.Text"><value>Run</value></data>
   <data name="BtnCustomActions.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip"><value>Cleaner actions</value></data>
   <data name="BtnCustomActions.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name"><value>Cleaner actions</value></data>
+  <data name="BtnOutputMoreActions.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip"><value>More options</value></data>
+  <data name="BtnOutputMoreActions.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name"><value>More options</value></data>
 
   <!-- Custom Page — code strings -->
   <data name="St_CustomStatus"><value>{0} cleaner · {1} enabled</value></data>
