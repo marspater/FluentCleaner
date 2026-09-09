@@ -536,6 +536,7 @@
 
                             <PasswordBox Grid.Column="1"
                                      x:Name="ApiKeyBox"
+                                     AutomationProperties.Name="API key"
                                      PlaceholderText="gsk_..."
                                      FontFamily="Cascadia Code, Consolas"
                                      FontSize="12"
