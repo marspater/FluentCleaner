@@ -20,6 +20,7 @@
   <data name="NavTerminal.Content"><value>Terminal</value></data>
   <data name="NavCustom.Content"><value>Custom</value></data>
   <data name="SearchBox.PlaceholderText"><value>Search</value></data>
+  <data name="SearchBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name"><value>Search</value></data>
   <data name="SearchIconButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip"><value>Search</value></data>
   <data name="SearchIconButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name"><value>Search</value></data>
   <data name="BtnPageActions.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip"><value>Page actions</value></data>
@@ -300,6 +301,7 @@
        TERMINAL / CLI
   ============================================================ -->
   <data name="TerminalPlaceholder.PlaceholderText"><value>clean firefox  ·  analyze chrome  ·  help</value></data>
+  <data name="TerminalPlaceholder.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name"><value>Terminal input</value></data>
   <data name="CLI_Welcome"><value>FluentCleaner Terminal online.</value></data>
   <data name="CLI_Databases"><value>Databases: {0} active — {1} detected entries</value></data>
   <data name="CLI_HelpHint"><value>Type 'help' for commands.</value></data>
