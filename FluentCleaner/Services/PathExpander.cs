@@ -85,6 +85,12 @@ public class PathExpander
         return results.ToList();
     }
 
+    private static readonly EnumerationOptions ReparseSkipOptions = new()
+    {
+        AttributesToSkip = FileAttributes.ReparsePoint,
+        IgnoreInaccessible = true,
+    };
+
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, bool> _dirExistsCache = new(StringComparer.OrdinalIgnoreCase);
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string[]> _dirEntriesCache = new(StringComparer.OrdinalIgnoreCase);
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string[]> _subDirsCache = new(StringComparer.OrdinalIgnoreCase);
@@ -142,13 +148,8 @@ public class PathExpander
                 {
                     try
                     {
-                        return Directory.GetDirectories(basePath, wildcard)
-                               .Where(d =>
-                               {
-                                   try { return (File.GetAttributes(d) & FileAttributes.ReparsePoint) == 0; }
-                                   catch { return false; }
-                               })
-                               .ToArray();
+                        // Use ReparseSkipOptions to natively filter reparse points during Win32 directory enumeration without File.GetAttributes syscalls
+                        return Directory.GetDirectories(basePath, wildcard, ReparseSkipOptions);
                     }
                     catch { return Array.Empty<string>(); }
                 });
