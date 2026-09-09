@@ -45,13 +45,16 @@ public class CleaningService(PathExpander? expander = null)
             {
                 foreach (var file in FindFiles(fileKey, excluded, entryProgress, token))
                 {
-                    if (filesToDeleteSet.Contains(file)) continue;
+                    if (!filesToDeleteSet.Add(file)) continue;
 
                     // Skip files that are truly inaccessible (hard lock / no permissions).
                     var size = TryGetDeletableSize(file);
-                    if (size < 0) continue;
+                    if (size < 0)
+                    {
+                        filesToDeleteSet.Remove(file);
+                        continue;
+                    }
 
-                    filesToDeleteSet.Add(file);
                     result.FilesToDelete.Add(file);
                     result.TotalBytes += size;
                 }
@@ -70,14 +73,18 @@ public class CleaningService(PathExpander? expander = null)
         return result;
     }
 
+    private static readonly EnumerationOptions ReparseSkipOptions = new()
+    {
+        AttributesToSkip = FileAttributes.ReparsePoint,
+        IgnoreInaccessible = true,
+    };
+
     /* Resolves the FileKey path to real directories and yields every matching file.
        Patterns get split here upfront so the tree walk only happens once down below. */
     private IEnumerable<string> FindFiles(FileKeyEntry fileKey, List<ExclusionRule> excluded, IProgress<string>? progress, CancellationToken token = default)
     {
         bool recurse = fileKey.Flag is FileKeyFlag.Recurse or FileKeyFlag.RemoveSelf;
-
-        var patterns = fileKey.Pattern
-            .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var patterns = fileKey.Patterns;
 
         foreach (var dir in _expander.ResolvePaths(fileKey.Path))
         {
@@ -101,7 +108,8 @@ public class CleaningService(PathExpander? expander = null)
        Reparse points skipped to prevent infinite junction loop traps. */
     private static IEnumerable<string> EnumerateFilesSafe(string root, string[] patterns, bool recurse, IProgress<string>? progress = null, CancellationToken token = default)
     {
-        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        // Allocate deduplication HashSet only when multiple search patterns exist
+        HashSet<string>? seen = patterns.Length > 1 ? new HashSet<string>(StringComparer.OrdinalIgnoreCase) : null;
         foreach (var p in patterns)
         {
             token.ThrowIfCancellationRequested();
@@ -109,7 +117,7 @@ public class CleaningService(PathExpander? expander = null)
             try { files = Directory.EnumerateFiles(root, p); }
             catch (Exception ex) { Debug.WriteLine($"[CleaningService.EnumerateFilesSafe] Error enumerating files in {root} with pattern {p}: {ex.Message}"); files = []; }
             foreach (var f in files)
-                if (seen.Add(f))   // skip if another pattern already matched this file
+                if (seen is null || seen.Add(f))   // skip if another pattern already matched this file
                     yield return f;
         }
 
@@ -118,8 +126,8 @@ public class CleaningService(PathExpander? expander = null)
         IEnumerable<string> dirs;
         try
         {
-            dirs = Directory.EnumerateDirectories(root)
-                            .Where(d => (File.GetAttributes(d) & FileAttributes.ReparsePoint) == 0);
+            // Use ReparseSkipOptions to natively filter reparse points during Win32 directory enumeration without File.GetAttributes syscalls
+            dirs = Directory.EnumerateDirectories(root, "*", ReparseSkipOptions);
         }
         catch (Exception ex) { Debug.WriteLine($"[CleaningService.EnumerateFilesSafe] Error enumerating directories in {root}: {ex.Message}"); yield break; }
 
@@ -293,7 +301,7 @@ public class CleaningService(PathExpander? expander = null)
                                        IntPtr.Zero, OPEN_EXISTING, 0, IntPtr.Zero);
         if (handle.IsInvalid) return -1;   // locked; skip!
 
-        try { return new FileInfo(path).Length; }
+        try { return RandomAccess.GetLength(handle); }
         catch (Exception ex) { Debug.WriteLine($"[CleaningService.TryGetDeletableSize] Failed to get length of {path}: {ex.Message}"); return -1; }
     }
 
