@@ -106,6 +106,7 @@
                                         HorizontalAlignment="Center"
                                         Padding="20,5"
                                         Style="{StaticResource AccentButtonStyle}"
+                                        AutomationProperties.Name="{x:Bind Name}"
                                         Visibility="{x:Bind ScriptVisibility}">
                                     <StackPanel Orientation="Horizontal" Spacing="6">
                                         <FontIcon Glyph="&#xE768;" FontSize="12" />
@@ -118,6 +119,7 @@
                                              HorizontalAlignment="Right"
                                              OnContent="" OffContent=""
                                              MinWidth="0"
+                                             AutomationProperties.Name="{x:Bind Name}"
                                              Visibility="{x:Bind IniVisibility}" />
                             </Grid>
                         </Border>

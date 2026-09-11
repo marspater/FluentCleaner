@@ -1,0 +1,3 @@
+## 2026-03-30 - Accessible Names for Dynamic List Controls & Unlabelled Toggles
+**Learning:** In WinUI 3 desktop applications, `ToggleSwitch` and `Button` controls rendered inside `DataTemplate` items (such as `ListView` items) default to unlabelled states for screen readers when `Header` or `Content` is empty or generic. Binding `AutomationProperties.Name="{x:Bind Name}"` directly to the view model's identifier property provides context for Narrator and other screen readers without altering the visual design layout.
+**Action:** Always bind `AutomationProperties.Name` on interactive controls inside data templates where visual text labels are separate or absent.

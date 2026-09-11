@@ -145,6 +145,7 @@
                             <ToggleSwitch Grid.Column="3"
                                           IsOn="{x:Bind ViewModel.EnableWinapp2, Mode=TwoWay}"
                                           OnContent="" OffContent=""
+                                          AutomationProperties.Name="Winapp2 database"
                                           MinWidth="0" Margin="0,0,-8,0"
                                           VerticalAlignment="Center" />
                         </Grid>
@@ -203,6 +204,7 @@
                             <ToggleSwitch Grid.Column="3"
                                           IsOn="{x:Bind ViewModel.EnableWinapp3, Mode=TwoWay}"
                                           OnContent="" OffContent=""
+                                          AutomationProperties.Name="Winapp3 database"
                                           MinWidth="0" Margin="0,0,-8,0"
                                           VerticalAlignment="Center" />
                         </Grid>
@@ -261,6 +263,7 @@
                             <ToggleSwitch Grid.Column="3"
                                           IsOn="{x:Bind ViewModel.EnableWinappx, Mode=TwoWay}"
                                           OnContent="" OffContent=""
+                                          AutomationProperties.Name="Winappx database"
                                           MinWidth="0" Margin="0,0,-8,0"
                                           VerticalAlignment="Center" />
                         </Grid>
@@ -352,6 +355,7 @@
                                   IsOn="{x:Bind ViewModel.PostCleanEnabled, Mode=TwoWay}"
                                   OnContent=""
                                   OffContent=""
+                                  AutomationProperties.Name="Post-clean tasks"
                                   MinWidth="0"
                                   Margin="12,0,-8,0"
                                   VerticalAlignment="Center" />
@@ -395,6 +399,7 @@
                                   IsOn="{x:Bind ViewModel.GlobalExclusionsEnabled, Mode=TwoWay}"
                                   OnContent=""
                                   OffContent=""
+                                  AutomationProperties.Name="Global exclusions"
                                   MinWidth="0"
                                   Margin="12,0,-8,0"
                                   VerticalAlignment="Center" />
@@ -443,7 +448,8 @@
                             </StackPanel>
                             <ToggleSwitch Grid.Column="1"
                                           IsOn="{x:Bind ViewModel.CleanHistoryEnabled, Mode=TwoWay}"
-                                          OnContent="" OffContent="" MinWidth="0" />
+                                          OnContent="" OffContent="" MinWidth="0"
+                                          AutomationProperties.Name="Clean history" />
                         </Grid>
                     </Expander.Header>
 
@@ -539,6 +545,7 @@
                                      PlaceholderText="gsk_..."
                                      FontFamily="Cascadia Code, Consolas"
                                      FontSize="12"
+                                     AutomationProperties.Name="Groq API Key"
                                      VerticalAlignment="Center" />
 
                             <StackPanel Grid.Column="2" Orientation="Horizontal"
