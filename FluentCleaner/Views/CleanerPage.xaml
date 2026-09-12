@@ -303,7 +303,8 @@
                         <DataTemplate x:DataType="vm:ScanResultLine">
                             <Grid Padding="12,7"
                                   BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
-                                  BorderThickness="0,0,0,1">
+                                  BorderThickness="0,0,0,1"
+                                  AutomationProperties.Name="{x:Bind AppName}">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" /> <!-- size + chevron -->
@@ -364,7 +365,8 @@
                     </ListView.ItemContainerStyle>
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="vm:DetailLine">
-                            <Grid Padding="12,3">
+                            <Grid Padding="12,3"
+                                  AutomationProperties.Name="{x:Bind Text}">
                                 <!-- Section header: "Files (3988)" or "Registry (2)" -->
                                 <TextBlock Text="{x:Bind Text}"
                                            FontSize="11"
