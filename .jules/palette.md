@@ -1,0 +1,3 @@
+## 2026-03-29 - Accessible Names on DataTemplate Controls
+**Learning:** In WinUI 3 XAML DataTemplates, controls with composite/layout child content (like a CheckBox wrapping a StackPanel with text and warning icons) or interactive list items (like scan result lines in a ListView) are not automatically assigned an accessible screen reader label. Explicitly setting `AutomationProperties.Name="{x:Bind ...}"` to the item name or title provides screen reader accessibility without changing visual layout or design.
+**Action:** Always verify controls with child layout panels or DataTemplate item templates have explicit `AutomationProperties.Name` bindings.
