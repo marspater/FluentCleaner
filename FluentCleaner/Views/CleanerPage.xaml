@@ -131,6 +131,7 @@
                                                     <CheckBox Grid.Column="0"
                                                               IsChecked="{x:Bind IsSelected, Mode=TwoWay}"
                                                               ToolTipService.ToolTip="{x:Bind Warning}"
+                                                              AutomationProperties.Name="{x:Bind Name}"
                                                               MinWidth="0"
                                                               Padding="6,3">
                                                         <StackPanel Orientation="Horizontal" Spacing="4">
@@ -303,7 +304,8 @@
                         <DataTemplate x:DataType="vm:ScanResultLine">
                             <Grid Padding="12,7"
                                   BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
-                                  BorderThickness="0,0,0,1">
+                                  BorderThickness="0,0,0,1"
+                                  AutomationProperties.Name="{x:Bind AppName}">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" /> <!-- size + chevron -->
