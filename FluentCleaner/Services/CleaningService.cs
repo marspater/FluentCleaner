@@ -96,6 +96,11 @@ public class CleaningService(PathExpander? expander = null)
         }
     }
 
+    private static readonly EnumerationOptions ReparseSkippedOptions = new()
+    {
+        AttributesToSkip = FileAttributes.ReparsePoint
+    };
+
     /* Walks the tree once; lets the OS match files per pattern (FindFirstFile knows about
        8.3 short-name aliases, we don't). HashSet drops files that match more than one pattern.
        Reparse points skipped to prevent infinite junction loop traps. */
@@ -118,8 +123,8 @@ public class CleaningService(PathExpander? expander = null)
         IEnumerable<string> dirs;
         try
         {
-            dirs = Directory.EnumerateDirectories(root)
-                            .Where(d => (File.GetAttributes(d) & FileAttributes.ReparsePoint) == 0);
+            // Use EnumerationOptions with AttributesToSkip = ReparsePoint to let OS filter junctions/symlinks natively without extra File.GetAttributes syscalls per directory.
+            dirs = Directory.EnumerateDirectories(root, "*", ReparseSkippedOptions);
         }
         catch (Exception ex) { Debug.WriteLine($"[CleaningService.EnumerateFilesSafe] Error enumerating directories in {root}: {ex.Message}"); yield break; }
 
