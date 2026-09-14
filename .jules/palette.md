@@ -1,0 +1,3 @@
+## 2026-03-31 - WinUI CheckBox AutomationProperties.Name for Panel Children
+**Learning:** In WinUI 3, when a `CheckBox` wraps layout panel children (e.g., `StackPanel` containing `FontIcon` and `TextBlock`) instead of plain string content, UI Automation peers cannot infer an accessible label automatically. Screen readers (Narrator/NVDA) announce only "Checkbox unchecked" without the item name unless `AutomationProperties.Name` is explicitly set on the `CheckBox`.
+**Action:** Always set `AutomationProperties.Name="{x:Bind ...}"` on `CheckBox` controls when their `Content` property is a layout panel like `StackPanel` or `Grid`.
