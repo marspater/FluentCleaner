@@ -1,0 +1,3 @@
+## 2025-05-18 - WinUI 3 CheckBox Accessible Names with Panel Content
+**Learning:** In WinUI 3 desktop XAML, when a `CheckBox` contains layout panel children (such as a `StackPanel` containing an icon and text) instead of a simple string `Content`, screen readers (Narrator/NVDA) cannot derive an accessible text label automatically from `.Content`. Adding `AutomationProperties.Name="{x:Bind Name}"` directly to the `CheckBox` is required to ensure screen readers announce the item label when focused.
+**Action:** Always specify `AutomationProperties.Name` on interactive controls (like `CheckBox` or `Button`) whenever their `Content` is a composite UI layout panel.

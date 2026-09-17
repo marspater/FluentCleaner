@@ -131,6 +131,7 @@
                                                     <CheckBox Grid.Column="0"
                                                               IsChecked="{x:Bind IsSelected, Mode=TwoWay}"
                                                               ToolTipService.ToolTip="{x:Bind Warning}"
+                                                              AutomationProperties.Name="{x:Bind Name}"
                                                               MinWidth="0"
                                                               Padding="6,3">
                                                         <StackPanel Orientation="Horizontal" Spacing="4">
