@@ -6,6 +6,7 @@ namespace FluentCleaner.Services;
 public class PathExpander
 {
     private readonly Dictionary<string, string> _vars = BuildVarMap();
+    private static readonly char[] WildcardChars = ['*', '?'];
 
     private static Dictionary<string, string> BuildVarMap()
     {
@@ -44,6 +45,14 @@ public class PathExpander
 
     public string ExpandVariables(string path)
     {
+        // Fast-path: Skip replacement loop and OS expansion if path contains no % tokens
+        if (path.IndexOf('%') < 0)
+        {
+            if (path.Length == 2 && char.IsLetter(path[0]) && path[1] == ':')
+                return path + Path.DirectorySeparatorChar;
+            return path;
+        }
+
         foreach (var (token, value) in _vars)
             path = path.Replace(token, value, StringComparison.OrdinalIgnoreCase);
 
@@ -98,6 +107,13 @@ public class PathExpander
 
     private static void ResolveRecursive(string path, HashSet<string> results)
     {
+        // Fast-path: Skip string splitting and array allocations if path contains no wildcards (* or ?)
+        if (path.IndexOfAny(WildcardChars) < 0)
+        {
+            results.Add(path);
+            return;
+        }
+
         var parts = path.Split(new[] { '\\', '/' }, StringSplitOptions.None);
 
         // Find the first segment that contains a wildcard
