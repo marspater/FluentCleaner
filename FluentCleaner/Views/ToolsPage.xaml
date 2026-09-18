@@ -40,6 +40,7 @@
                               HorizontalAlignment="Right"
                               VerticalAlignment="Center"
                               FontSize="11"
+                              AutomationProperties.Name="Category filter"
                               SelectionChanged="comboFilter_SelectionChanged" />
                 </Grid>
 
@@ -49,6 +50,7 @@
                 <ListView x:Name="listTools" Grid.Row="2"
                           SelectionMode="Single"
                           Padding="4,4,4,8"
+                          AutomationProperties.Name="Extensions list"
                           SelectionChanged="listTools_SelectionChanged"
                           Visibility="Collapsed">
                     <ListView.ItemTemplate>
@@ -151,6 +153,7 @@
                                  IsOpen="False" IsClosable="False">
                             <InfoBar.ActionButton>
                                 <Button x:Name="btnShowHelp" Content="Show help"
+                                        AutomationProperties.Name="Show help"
                                         Click="btnShowHelp_Click" FontSize="11" />
                             </InfoBar.ActionButton>
                         </InfoBar>
@@ -159,12 +162,14 @@
                         <ComboBox x:Name="comboOptions"
                                   HorizontalAlignment="Stretch"
                                   PlaceholderText="Select option"
+                                  AutomationProperties.Name="Extension options"
                                   Visibility="Collapsed" />
 
                         <!-- free-text input -->
                         <TextBox x:Name="textInput"
                                  HorizontalAlignment="Stretch"
                                  PlaceholderText="Enter input (e.g. IDs or raw arguments)"
+                                 AutomationProperties.Name="Extension input"
                                  Visibility="Collapsed" />
 
                         <!-- attribution link -->
@@ -177,9 +182,11 @@
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <Button x:Name="btnRun" Content="Run"
                                     Style="{StaticResource AccentButtonStyle}"
+                                    AutomationProperties.Name="Run extension"
                                     Click="btnRun_Click"
                                     Visibility="Collapsed" />
                             <Button x:Name="btnUninstall" Content="Remove"
+                                    AutomationProperties.Name="Remove extension"
                                     Click="btnUninstall_Click"
                                     Visibility="Collapsed" />
                         </StackPanel>
@@ -236,7 +243,8 @@
                                  BorderThickness="0"
                                  Background="Transparent"
                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
-                                 PlaceholderText="Extension output will appear here..." />
+                                 PlaceholderText="Extension output will appear here..."
+                                 AutomationProperties.Name="Extension output log" />
                     </StackPanel>
                 </Border>
             </Border>
