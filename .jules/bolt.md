@@ -5,3 +5,7 @@
 ## 2026-09-04 - Fast-pathing PathExpander string operations
 **Learning:** In `PathExpander`, checking `path.IndexOf('%') >= 0` and `path.IndexOfAny(WildcardChars) < 0` before running variable replacement loops and string splitting bypasses expensive dictionary enumerations and array allocations for literal paths.
 **Action:** Always check for character triggers (`%`, `*`, `?`) before applying string replacement routines or regex/splitting operations in path expansion logic.
+
+## 2026-09-06 - SafeFileHandle length retrieval via RandomAccess.GetLength
+**Learning:** In file probing routines where a `SafeFileHandle` is opened via Win32 `CreateFileW`, calling `new FileInfo(path).Length` triggers a redundant path lookup, Win32 stat call, and heap allocates a `FileInfo` object. Using `RandomAccess.GetLength(handle)` directly queries the open handle with 0 heap allocations and no duplicate path resolution overhead.
+**Action:** When working with open `SafeFileHandle` objects, use `RandomAccess.GetLength(handle)` to query file sizes rather than instantiating `FileInfo`.

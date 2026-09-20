@@ -293,7 +293,12 @@ public class CleaningService(PathExpander? expander = null)
                                        IntPtr.Zero, OPEN_EXISTING, 0, IntPtr.Zero);
         if (handle.IsInvalid) return -1;   // locked; skip!
 
-        try { return new FileInfo(path).Length; }
+        try
+        {
+            // Optimization: Get file length directly from the open safe handle via RandomAccess.GetLength.
+            // This avoids heap-allocating a new FileInfo object and prevents duplicate Win32 file path lookup/parsing.
+            return RandomAccess.GetLength(handle);
+        }
         catch (Exception ex) { Debug.WriteLine($"[CleaningService.TryGetDeletableSize] Failed to get length of {path}: {ex.Message}"); return -1; }
     }
 
