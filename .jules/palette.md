@@ -1,0 +1,3 @@
+## 2026-03-30 - WinUI 3 Control AutomationProperties for Screen Readers
+**Learning:** WinUI 3 interactive controls (`CheckBox`, `ToggleSwitch`) that contain child layout containers (like `StackPanel`) or have empty `OnContent`/`OffContent` do not automatically extract accessible names from inner text blocks for Windows screen readers (Narrator, NVDA). When keyboard users tab to these controls, screen readers announce only "Unchecked checkbox" or "Toggle switch" without context.
+**Action:** Always set `AutomationProperties.Name="{x:Bind ...}"` directly on parent controls in XAML data templates when children are nested inside layout containers or when controls lack default textual headers.
