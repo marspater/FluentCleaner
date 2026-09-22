@@ -88,6 +88,7 @@
                                             <!-- [...] category actions -->
                                             <Button x:Uid="BtnCategoryActions"
                                                     Grid.Column="1"
+                                                    AutomationProperties.Name="Category actions"
                                                     Style="{StaticResource FC_SubtleIconButton}"
                                                     Margin="6,0,0,0">
                                                 <FontIcon Glyph="&#xE712;" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
@@ -131,6 +132,7 @@
                                                     <CheckBox Grid.Column="0"
                                                               IsChecked="{x:Bind IsSelected, Mode=TwoWay}"
                                                               ToolTipService.ToolTip="{x:Bind Warning}"
+                                                              AutomationProperties.Name="{x:Bind Name}"
                                                               MinWidth="0"
                                                               Padding="6,3">
                                                         <StackPanel Orientation="Horizontal" Spacing="4">
@@ -158,6 +160,7 @@
                                                     <!-- [...] entry actions -->
                                                     <Button x:Uid="BtnEntryActions"
                                                             Grid.Column="2"
+                                                            AutomationProperties.Name="Entry actions"
                                                             Style="{StaticResource FC_SubtleIconButton}"
                                                             MinWidth="24" MinHeight="24"
                                                             Margin="0,0,2,0">
@@ -251,6 +254,7 @@
                     <Button x:Uid="BtnBackToResults"
                             Grid.Column="0"
                             Command="{x:Bind ViewModel.ClearDetailCommand}"
+                            AutomationProperties.Name="Back to results"
                             Width="24" Height="24" Padding="0">
                         <FontIcon Glyph="&#xE72B;" FontSize="14" />
                     </Button>
@@ -267,6 +271,7 @@
                     <Button x:Uid="BtnCleanDetail"
                             Grid.Column="2"
                             Command="{x:Bind ViewModel.CleanSelectedCommand}"
+                            AutomationProperties.Name="Clean selected entry"
                             Width="28" Height="28" Padding="0">
                         <FontIcon Glyph="&#xE74D;" FontSize="13" />
                     </Button>
