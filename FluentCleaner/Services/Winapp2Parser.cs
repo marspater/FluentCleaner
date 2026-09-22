@@ -1,5 +1,4 @@
 using FluentCleaner.Models;
-using System.Text.RegularExpressions;
 
 namespace FluentCleaner.Services;
 
@@ -8,39 +7,23 @@ namespace FluentCleaner.Services;
 // FileKey1=..., FileKey2=..., Detect, Detect1, Detect2, etc.
 public partial class Winapp2Parser
 {
-    [GeneratedRegex(@"^FileKey\d+$", RegexOptions.IgnoreCase)]
-    private static partial Regex RxFileKey();
-
-    [GeneratedRegex(@"^RegKey\d+$", RegexOptions.IgnoreCase)]
-    private static partial Regex RxRegKey();
-
-    [GeneratedRegex(@"^ExcludeKey\d+$", RegexOptions.IgnoreCase)]
-    private static partial Regex RxExcludeKey();
-
-    [GeneratedRegex(@"^Detect\d*$", RegexOptions.IgnoreCase)]
-    private static partial Regex RxDetect();
-
-    [GeneratedRegex(@"^DetectFile\d*$", RegexOptions.IgnoreCase)]
-    private static partial Regex RxDetectFile();
-
     public List<CleanerEntry> Parse(string content, bool requireDetection = true)
     {
         var entries = new List<CleanerEntry>();
         CleanerEntry? current = null;
 
-        //Split on both \r and \n;WinUI 3 TextBox saves with \r only (not \r\n),
-        //so splitting on just \n would leave the entire file as a single line
-        foreach (var rawLine in content.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries))
+        // Bolt optimization: Use ReadOnlySpan<char> line enumeration to eliminate string[] array allocations.
+        foreach (var rawLine in content.AsSpan().EnumerateLines())
         {
             var line = rawLine.Trim();
-            if (line.Length == 0 || line[0] == ';' || line[0] == '#') continue;
+            if (line.IsEmpty || line[0] == ';' || line[0] == '#') continue;
 
             if (line.StartsWith('[') && line.EndsWith(']'))
             {
                 if (current is not null && IsValid(current, requireDetection)) entries.Add(current);
 
                 var name = line[1..^1].Trim();
-                //Skip the files own header block
+                // Skip the file's own header block
                 if (name.StartsWith("Winapp2", StringComparison.OrdinalIgnoreCase) ||
                     name.StartsWith("version",  StringComparison.OrdinalIgnoreCase))
                 {
@@ -48,8 +31,8 @@ public partial class Winapp2Parser
                     continue;
                 }
 
-                //Strip the trailing " *" Winapp2 uses to mark community entries
-                current = new CleanerEntry { Name = name.TrimEnd('*').TrimEnd() };
+                // Strip the trailing " *" Winapp2 uses to mark community entries
+                current = new CleanerEntry { Name = name.TrimEnd('*').TrimEnd().ToString() };
                 continue;
             }
 
@@ -60,22 +43,64 @@ public partial class Winapp2Parser
 
             var key   = line[..eqIdx].Trim();
             var value = line[(eqIdx + 1)..].Trim();
-            if (value.Length == 0) continue;
+            if (value.IsEmpty) continue;
 
-            if      (key.Equals("LangSecRef",    StringComparison.OrdinalIgnoreCase)) { if (int.TryParse(value, out var n)) current.LangSecRef = n; }
-            else if (key.Equals("Section",       StringComparison.OrdinalIgnoreCase)) current.Section       = value;
-            else if (key.Equals("SpecialDetect", StringComparison.OrdinalIgnoreCase)) current.SpecialDetect = value;
-            else if (key.Equals("Warning",       StringComparison.OrdinalIgnoreCase)) current.Warning       = value;
-            else if (key.Equals("Default",       StringComparison.OrdinalIgnoreCase)) current.Default       = value.Equals("True", StringComparison.OrdinalIgnoreCase);
-            else if (RxDetect().IsMatch(key))     current.DetectKeys.Add(value);
-            else if (RxDetectFile().IsMatch(key)) current.DetectFiles.Add(value);
-            else if (RxFileKey().IsMatch(key))    current.FileKeys.Add(FileKeyEntry.Parse(value));
-            else if (RxRegKey().IsMatch(key))     current.RegKeys.Add(RegKeyEntry.Parse(value));
-            else if (RxExcludeKey().IsMatch(key)) current.ExcludeKeys.Add(ExcludeKeyEntry.Parse(value));
+            if (key.Equals("LangSecRef", StringComparison.OrdinalIgnoreCase))
+            {
+                if (int.TryParse(value, out var n)) current.LangSecRef = n;
+            }
+            else if (key.Equals("Section", StringComparison.OrdinalIgnoreCase))
+            {
+                current.Section = value.ToString();
+            }
+            else if (key.Equals("SpecialDetect", StringComparison.OrdinalIgnoreCase))
+            {
+                current.SpecialDetect = value.ToString();
+            }
+            else if (key.Equals("Warning", StringComparison.OrdinalIgnoreCase))
+            {
+                current.Warning = value.ToString();
+            }
+            else if (key.Equals("Default", StringComparison.OrdinalIgnoreCase))
+            {
+                current.Default = value.Equals("True", StringComparison.OrdinalIgnoreCase);
+            }
+            else if (IsMatchKey(key, "Detect", requireDigits: false))
+            {
+                current.DetectKeys.Add(value.ToString());
+            }
+            else if (IsMatchKey(key, "DetectFile", requireDigits: false))
+            {
+                current.DetectFiles.Add(value.ToString());
+            }
+            else if (IsMatchKey(key, "FileKey", requireDigits: true))
+            {
+                current.FileKeys.Add(FileKeyEntry.Parse(value));
+            }
+            else if (IsMatchKey(key, "RegKey", requireDigits: true))
+            {
+                current.RegKeys.Add(RegKeyEntry.Parse(value));
+            }
+            else if (IsMatchKey(key, "ExcludeKey", requireDigits: true))
+            {
+                current.ExcludeKeys.Add(ExcludeKeyEntry.Parse(value));
+            }
         }
 
         if (current is not null && IsValid(current, requireDetection)) entries.Add(current);
         return entries;
+    }
+
+    // Bolt optimization: Fast zero-allocation replacement for Regex matching on key names.
+    // Checks that key starts with prefix and remaining characters are ASCII digits.
+    private static bool IsMatchKey(ReadOnlySpan<char> key, ReadOnlySpan<char> prefix, bool requireDigits = true)
+    {
+        if (!key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) return false;
+        var suffix = key[prefix.Length..];
+        if (requireDigits && suffix.IsEmpty) return false;
+        foreach (var c in suffix)
+            if (!char.IsAsciiDigit(c)) return false;
+        return true;
     }
 
     // An entry is only useful if it can be detected (unless detection is optional) AND has something to clean
