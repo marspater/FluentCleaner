@@ -1,0 +1,3 @@
+## 2026-03-30 - WinUI 3 CheckBox & ToggleSwitch Screen Reader Accessible Names
+**Learning:** In WinUI 3 desktop applications, when interactive controls such as `CheckBox` or `ToggleSwitch` contain complex layout containers (e.g. `StackPanel` or `Grid`) or have blank content properties (`OnContent="" OffContent=""`), screen readers (Windows Narrator, NVDA) do not automatically aggregate nested child `TextBlock` strings into the accessible name.
+**Action:** Always explicitly bind `AutomationProperties.Name="{x:Bind ...}"` directly on container-wrapping `CheckBox` and `ToggleSwitch` controls in DataTemplates so screen readers announce item labels during keyboard navigation.
