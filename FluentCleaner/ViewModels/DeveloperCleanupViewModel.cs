@@ -300,28 +300,24 @@ public partial class DeveloperCleanupViewModel : ObservableObject
         di.Delete(true);
     }
 
+    private static readonly EnumerationOptions _reparseSkipOptions = new()
+    {
+        AttributesToSkip = FileAttributes.ReparsePoint,
+        RecurseSubdirectories = false
+    };
+
     private void ScanDirectory(string path, List<string> results, List<string> targets, CancellationToken token, IProgress<string> progress)
     {
         token.ThrowIfCancellationRequested();
         
         try
         {
-            var dirs = Directory.EnumerateDirectories(path);
+            // Delegate reparse point filtering natively to the OS enumerator to avoid
+            // per-directory File.GetAttributes Win32 syscalls.
+            var dirs = Directory.EnumerateDirectories(path, "*", _reparseSkipOptions);
             foreach (var dir in dirs)
             {
                 token.ThrowIfCancellationRequested();
-                
-                try
-                {
-                    if ((File.GetAttributes(dir) & FileAttributes.ReparsePoint) != 0)
-                        continue;
-                }
-                catch (OperationCanceledException) { throw; }
-                catch (Exception ex) when (ex is UnauthorizedAccessException or DirectoryNotFoundException or IOException or System.Security.SecurityException)
-                {
-                    System.Diagnostics.Debug.WriteLine($"[DeveloperCleanupViewModel.ScanDirectory] Error reading attributes for {dir}: {ex.Message}");
-                    continue;
-                }
 
                 var name = Path.GetFileName(dir);
                 
