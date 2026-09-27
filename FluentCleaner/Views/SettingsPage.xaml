@@ -537,6 +537,7 @@
                             <PasswordBox Grid.Column="1"
                                      x:Name="ApiKeyBox"
                                      PlaceholderText="gsk_..."
+                                     AutomationProperties.Name="Groq API key"
                                      FontFamily="Cascadia Code, Consolas"
                                      FontSize="12"
                                      VerticalAlignment="Center" />

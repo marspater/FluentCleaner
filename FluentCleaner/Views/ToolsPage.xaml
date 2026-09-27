@@ -40,6 +40,7 @@
                               HorizontalAlignment="Right"
                               VerticalAlignment="Center"
                               FontSize="11"
+                              AutomationProperties.Name="Filter extensions by category"
                               SelectionChanged="comboFilter_SelectionChanged" />
                 </Grid>
 
@@ -159,12 +160,14 @@
                         <ComboBox x:Name="comboOptions"
                                   HorizontalAlignment="Stretch"
                                   PlaceholderText="Select option"
+                                  AutomationProperties.Name="Extension option"
                                   Visibility="Collapsed" />
 
                         <!-- free-text input -->
                         <TextBox x:Name="textInput"
                                  HorizontalAlignment="Stretch"
                                  PlaceholderText="Enter input (e.g. IDs or raw arguments)"
+                                 AutomationProperties.Name="Extension input parameter"
                                  Visibility="Collapsed" />
 
                         <!-- attribution link -->
