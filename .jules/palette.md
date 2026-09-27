@@ -1,0 +1,3 @@
+## 2026-03-31 - WinUI 3 Composite CheckBox Accessibility
+**Learning:** In WinUI 3 desktop controls, when a `CheckBox` contains layout panel children (such as a `StackPanel` containing `FontIcon` and `TextBlock`) instead of plain string `Content`, screen readers (Narrator/NVDA) cannot automatically infer the control's text name and will announce only "Unchecked, CheckBox" without item context.
+**Action:** Always set `AutomationProperties.Name="{x:Bind Name}"` (or the corresponding item title property) directly on `CheckBox` instances that wrap complex child templates to ensure proper screen reader announcements during keyboard navigation.
