@@ -1,0 +1,3 @@
+## 2026-03-31 - WinUI 3 Accessible Names for Complex Control Content
+**Learning:** In WinUI 3 XAML, interactive controls like `CheckBox` with complex child panels (e.g. `StackPanel` containing `FontIcon` and `TextBlock`) and `ToggleSwitch` controls without visible header text do not automatically expose accessible text labels to screen readers (Narrator/NVDA). Focus lands on the control without announcing its purpose or item name.
+**Action:** Always set `AutomationProperties.Name="{x:Bind Name}"` (or the relevant view model string property) directly on `CheckBox` and `ToggleSwitch` elements whenever their content is a complex layout container or lacks a plain text label.

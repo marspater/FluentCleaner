@@ -40,6 +40,7 @@
                               HorizontalAlignment="Right"
                               VerticalAlignment="Center"
                               FontSize="11"
+                              AutomationProperties.Name="Filter extensions"
                               SelectionChanged="comboFilter_SelectionChanged" />
                 </Grid>
 
@@ -49,6 +50,7 @@
                 <ListView x:Name="listTools" Grid.Row="2"
                           SelectionMode="Single"
                           Padding="4,4,4,8"
+                          AutomationProperties.Name="Extensions list"
                           SelectionChanged="listTools_SelectionChanged"
                           Visibility="Collapsed">
                     <ListView.ItemTemplate>
