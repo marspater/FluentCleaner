@@ -283,17 +283,20 @@ public class CleaningService(PathExpander? expander = null)
     }
 
     // Probe whether a file is deletable right now by requesting DELETE access via CreateFileW.
+    // Also requests FILE_READ_ATTRIBUTES so RandomAccess.GetLength(handle) can query length directly
+    // without instantiating FileInfo heap objects or issuing secondary filesystem stat calls.
     private static long TryGetDeletableSize(string path)
     {
         const uint DELETE = 0x00010000;
+        const uint FILE_READ_ATTRIBUTES = 0x0080;
         const uint FILE_SHARE_ALL = 0x7;   // Read | Write | Delete
         const uint OPEN_EXISTING = 3;
 
-        using var handle = CreateFileW(path, DELETE, FILE_SHARE_ALL,
+        using var handle = CreateFileW(path, DELETE | FILE_READ_ATTRIBUTES, FILE_SHARE_ALL,
                                        IntPtr.Zero, OPEN_EXISTING, 0, IntPtr.Zero);
         if (handle.IsInvalid) return -1;   // locked; skip!
 
-        try { return new FileInfo(path).Length; }
+        try { return RandomAccess.GetLength(handle); }
         catch (Exception ex) { Debug.WriteLine($"[CleaningService.TryGetDeletableSize] Failed to get length of {path}: {ex.Message}"); return -1; }
     }
 
