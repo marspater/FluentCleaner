@@ -99,6 +99,8 @@
                                  HorizontalAlignment="Center"
                                  FontSize="12" />
                 <Button Content="Open app folder"
+                        ToolTipService.ToolTip="Open app folder"
+                        AutomationProperties.Name="Open app folder"
                         Click="btnOpenFolder_Click"
                         HorizontalAlignment="Center"
                         FontSize="12" />
@@ -180,6 +182,8 @@
                                     Click="btnRun_Click"
                                     Visibility="Collapsed" />
                             <Button x:Name="btnUninstall" Content="Remove"
+                                    ToolTipService.ToolTip="Remove extension"
+                                    AutomationProperties.Name="Remove extension"
                                     Click="btnUninstall_Click"
                                     Visibility="Collapsed" />
                         </StackPanel>
