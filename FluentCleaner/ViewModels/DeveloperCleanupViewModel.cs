@@ -45,6 +45,12 @@ public partial class DeveloperCleanupViewModel : ObservableObject
 
     public ObservableCollection<TrashDirectoryViewModel> TrashDirectories { get; } = new();
 
+    private static readonly EnumerationOptions _skipReparseOptions = new()
+    {
+        AttributesToSkip = FileAttributes.ReparsePoint,
+        IgnoreInaccessible = true
+    };
+
     private CancellationTokenSource? _cts;
     private CancellationTokenSource? _sizingCts;
     private bool _isUpdatingSelection;
@@ -126,7 +132,8 @@ public partial class DeveloperCleanupViewModel : ObservableObject
         _cts = new CancellationTokenSource();
         var token = _cts.Token;
 
-        var targets = new List<string>();
+        // Optimization: Use HashSet for O(1) target folder name matching during directory tree walk
+        var targets = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         if (ScanNodeModules) targets.Add("node_modules");
         if (ScanTarget) targets.Add("target");
         if (ScanBinObj)
@@ -300,42 +307,23 @@ public partial class DeveloperCleanupViewModel : ObservableObject
         di.Delete(true);
     }
 
-    private void ScanDirectory(string path, List<string> results, List<string> targets, CancellationToken token, IProgress<string> progress)
+    private void ScanDirectory(string path, List<string> results, HashSet<string> targets, CancellationToken token, IProgress<string> progress)
     {
         token.ThrowIfCancellationRequested();
         
         try
         {
-            var dirs = Directory.EnumerateDirectories(path);
+            // Optimization: Delegate reparse point (junction/symlink) filtering natively to OS enumeration options,
+            // eliminating per-directory File.GetAttributes Win32 syscall overhead.
+            var dirs = Directory.EnumerateDirectories(path, "*", _skipReparseOptions);
             foreach (var dir in dirs)
             {
                 token.ThrowIfCancellationRequested();
-                
-                try
-                {
-                    if ((File.GetAttributes(dir) & FileAttributes.ReparsePoint) != 0)
-                        continue;
-                }
-                catch (OperationCanceledException) { throw; }
-                catch (Exception ex) when (ex is UnauthorizedAccessException or DirectoryNotFoundException or IOException or System.Security.SecurityException)
-                {
-                    System.Diagnostics.Debug.WriteLine($"[DeveloperCleanupViewModel.ScanDirectory] Error reading attributes for {dir}: {ex.Message}");
-                    continue;
-                }
 
                 var name = Path.GetFileName(dir);
                 
-                bool isTarget = false;
-                foreach (var t in targets)
-                {
-                    if (name.Equals(t, StringComparison.OrdinalIgnoreCase))
-                    {
-                        isTarget = true;
-                        break;
-                    }
-                }
-                
-                if (isTarget)
+                // Optimization: O(1) target name lookup instead of linear list iteration
+                if (targets.Contains(name))
                 {
                     results.Add(dir);
                     progress.Report($"Found: {dir}");
@@ -403,10 +391,10 @@ public partial class DeveloperCleanupViewModel : ObservableObject
                 }
             }
 
-            foreach (var sub in di.EnumerateDirectories())
+            // Optimization: Delegate reparse point (junction/symlink) filtering to OS enumeration options
+            foreach (var sub in di.EnumerateDirectories("*", _skipReparseOptions))
             {
                 token.ThrowIfCancellationRequested();
-                if ((sub.Attributes & FileAttributes.ReparsePoint) != 0) continue;
                 size += CalculateDirectorySize(sub.FullName, token);
             }
         }
