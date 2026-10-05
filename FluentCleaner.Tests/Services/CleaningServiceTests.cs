@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
-using FluentAssertions;
 using FluentCleaner.Models;
 using FluentCleaner.Services;
 using Xunit;
@@ -57,10 +56,10 @@ public class CleaningServiceTests : IDisposable
         var result = await service.AnalyzeAsync(entry);
 
         // Assert
-        result.Should().NotBeNull();
-        result.FilesToDelete.Should().Contain(file1);
-        result.FilesToDelete.Should().Contain(file2);
-        result.TotalBytes.Should().Be(12 + 23);
+        Assert.NotNull(result);
+        Assert.Contains(file1, result.FilesToDelete);
+        Assert.Contains(file2, result.FilesToDelete);
+        Assert.Equal(12 + 23, result.TotalBytes);
     }
 
     [Fact]
@@ -83,8 +82,8 @@ public class CleaningServiceTests : IDisposable
         var (count, bytes) = await service.CleanAsync(scanResult);
 
         // Assert
-        count.Should().Be(1);
-        bytes.Should().Be(10);
-        File.Exists(file1).Should().BeFalse();
+        Assert.Equal(1, count);
+        Assert.Equal(10, bytes);
+        Assert.False(File.Exists(file1));
     }
 }
