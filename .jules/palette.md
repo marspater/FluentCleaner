@@ -1,0 +1,3 @@
+## 2026-03-30 - Screen Reader Names for WinUI 3 Controls with Layout Panels
+**Learning:** In WinUI 3, when controls like `CheckBox` or `ToggleSwitch` contain complex child element templates (e.g., `StackPanel` containing `TextBlock` elements) or lack a visual header, UI Automation fails to synthesize an accessible label. Setting `AutomationProperties.Name="{x:Bind ...}"` directly on the interactive control in `DataTemplate` items enables screen readers (Narrator/NVDA) to announce the item title.
+**Action:** Always bind `AutomationProperties.Name` on `CheckBox` and `ToggleSwitch` controls when they use custom content templates or lack explicit headers in `DataTemplate` items.
