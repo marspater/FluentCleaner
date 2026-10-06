@@ -29,6 +29,14 @@ public partial class TrashDirectoryViewModel : ObservableObject
 
 public partial class DeveloperCleanupViewModel : ObservableObject
 {
+    // Native OS directory enumeration options to skip reparse points and inaccessible folders at the OS level,
+    // avoiding per-directory File.GetAttributes Win32 syscalls during workspace scans.
+    private static readonly EnumerationOptions SafeDirOptions = new()
+    {
+        AttributesToSkip = FileAttributes.ReparsePoint,
+        IgnoreInaccessible = true
+    };
+
     [ObservableProperty] public partial string RootPath { get; set; } = "";
     [ObservableProperty] public partial bool IsBusy { get; set; }
     [ObservableProperty] public partial string StatusText { get; set; } = "Select a directory to scan for developer workspace trash.";
@@ -306,22 +314,12 @@ public partial class DeveloperCleanupViewModel : ObservableObject
         
         try
         {
-            var dirs = Directory.EnumerateDirectories(path);
+            // SafeDirOptions handles reparse point and inaccessible directory filtering natively
+            // at the OS enumerator level without per-directory File.GetAttributes Win32 syscalls.
+            var dirs = Directory.EnumerateDirectories(path, "*", SafeDirOptions);
             foreach (var dir in dirs)
             {
                 token.ThrowIfCancellationRequested();
-                
-                try
-                {
-                    if ((File.GetAttributes(dir) & FileAttributes.ReparsePoint) != 0)
-                        continue;
-                }
-                catch (OperationCanceledException) { throw; }
-                catch (Exception ex) when (ex is UnauthorizedAccessException or DirectoryNotFoundException or IOException or System.Security.SecurityException)
-                {
-                    System.Diagnostics.Debug.WriteLine($"[DeveloperCleanupViewModel.ScanDirectory] Error reading attributes for {dir}: {ex.Message}");
-                    continue;
-                }
 
                 var name = Path.GetFileName(dir);
                 
@@ -403,10 +401,10 @@ public partial class DeveloperCleanupViewModel : ObservableObject
                 }
             }
 
-            foreach (var sub in di.EnumerateDirectories())
+            // SafeDirOptions skips reparse points and inaccessible directories natively at the OS level
+            foreach (var sub in di.EnumerateDirectories("*", SafeDirOptions))
             {
                 token.ThrowIfCancellationRequested();
-                if ((sub.Attributes & FileAttributes.ReparsePoint) != 0) continue;
                 size += CalculateDirectorySize(sub.FullName, token);
             }
         }

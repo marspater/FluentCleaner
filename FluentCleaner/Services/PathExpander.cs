@@ -1,3 +1,5 @@
+using System.IO;
+
 namespace FluentCleaner.Services;
 
 /* Handles the two jobs that make FileKey paths tricky:
@@ -89,6 +91,14 @@ public class PathExpander
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string[]> _dirEntriesCache = new(StringComparer.OrdinalIgnoreCase);
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string[]> _subDirsCache = new(StringComparer.OrdinalIgnoreCase);
 
+    // Native OS directory enumeration options to skip reparse points and inaccessible folders at the OS level,
+    // avoiding per-directory File.GetAttributes Win32 syscalls during wildcard expansion.
+    private static readonly EnumerationOptions SafeDirOptions = new()
+    {
+        AttributesToSkip = FileAttributes.ReparsePoint,
+        IgnoreInaccessible = true
+    };
+
     public static void ClearCache()
     {
         _dirExistsCache.Clear();
@@ -142,13 +152,9 @@ public class PathExpander
                 {
                     try
                     {
-                        return Directory.GetDirectories(basePath, wildcard)
-                               .Where(d =>
-                               {
-                                   try { return (File.GetAttributes(d) & FileAttributes.ReparsePoint) == 0; }
-                                   catch { return false; }
-                               })
-                               .ToArray();
+                        // SafeDirOptions delegates reparse point skipping directly to the OS enumerator,
+                        // eliminating per-directory File.GetAttributes Win32 syscalls and LINQ allocations.
+                        return Directory.GetDirectories(basePath, wildcard, SafeDirOptions);
                     }
                     catch { return Array.Empty<string>(); }
                 });
