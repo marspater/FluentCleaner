@@ -1,0 +1,3 @@
+## 2026-03-31 - Explicit Accessibility Automation Properties in WinUI 3
+**Learning:** When controls like `CheckBox`, `ComboBox`, `ToggleSwitch`, or `TextBox` in WinUI 3 contain child layout elements (e.g. `StackPanel`) instead of plain string content, screen readers (Narrator/NVDA) cannot automatically infer an accessible label. Explicitly adding `AutomationProperties.Name` on the control guarantees clear screen reader announcements without altering visual layout or styling.
+**Action:** Always verify interactive controls with child elements or custom layout content have `AutomationProperties.Name` or `x:Uid` resources mapped for screen reader accessibility.
