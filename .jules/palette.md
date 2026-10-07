@@ -1,0 +1,3 @@
+## 2026-03-31 - WinUI 3 CheckBox and ToggleSwitch Screen Reader Accessible Names
+**Learning:** In WinUI 3 desktop controls rendered inside `DataTemplate` items (such as `ListView` items), interactive controls like `CheckBox` with custom layout panel children (e.g., `StackPanel` containing `FontIcon` and `TextBlock`) or `ToggleSwitch` with empty `OnContent`/`OffContent` do not automatically expose accessible labels to screen readers like Narrator or NVDA.
+**Action:** Always set `AutomationProperties.Name="{x:Bind ...}"` directly on WinUI 3 `CheckBox` and `ToggleSwitch` controls when using custom template layout children or empty content.
