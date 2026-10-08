@@ -144,6 +144,7 @@
                             <!-- Toggle -->
                             <ToggleSwitch Grid.Column="3"
                                           IsOn="{x:Bind ViewModel.EnableWinapp2, Mode=TwoWay}"
+                                          AutomationProperties.Name="Winapp2"
                                           OnContent="" OffContent=""
                                           MinWidth="0" Margin="0,0,-8,0"
                                           VerticalAlignment="Center" />
@@ -202,6 +203,7 @@
                             <!-- Toggle -->
                             <ToggleSwitch Grid.Column="3"
                                           IsOn="{x:Bind ViewModel.EnableWinapp3, Mode=TwoWay}"
+                                          AutomationProperties.Name="Winapp3"
                                           OnContent="" OffContent=""
                                           MinWidth="0" Margin="0,0,-8,0"
                                           VerticalAlignment="Center" />
@@ -260,6 +262,7 @@
                             <!-- Toggle -->
                             <ToggleSwitch Grid.Column="3"
                                           IsOn="{x:Bind ViewModel.EnableWinappx, Mode=TwoWay}"
+                                          AutomationProperties.Name="Winappx"
                                           OnContent="" OffContent=""
                                           MinWidth="0" Margin="0,0,-8,0"
                                           VerticalAlignment="Center" />
@@ -350,6 +353,7 @@
 
                     <ToggleSwitch Grid.Column="1"
                                   IsOn="{x:Bind ViewModel.PostCleanEnabled, Mode=TwoWay}"
+                                  AutomationProperties.Name="Post-clean tasks"
                                   OnContent=""
                                   OffContent=""
                                   MinWidth="0"
@@ -393,6 +397,7 @@
 
                     <ToggleSwitch Grid.Column="1"
                                   IsOn="{x:Bind ViewModel.GlobalExclusionsEnabled, Mode=TwoWay}"
+                                  AutomationProperties.Name="Global exclusions"
                                   OnContent=""
                                   OffContent=""
                                   MinWidth="0"
@@ -443,6 +448,7 @@
                             </StackPanel>
                             <ToggleSwitch Grid.Column="1"
                                           IsOn="{x:Bind ViewModel.CleanHistoryEnabled, Mode=TwoWay}"
+                                          AutomationProperties.Name="Clean history"
                                           OnContent="" OffContent="" MinWidth="0" />
                         </Grid>
                     </Expander.Header>
