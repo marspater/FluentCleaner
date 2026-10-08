@@ -14,6 +14,11 @@ namespace FluentCleaner.Services;
 public class CleaningService(PathExpander? expander = null)
 {
     private readonly PathExpander _expander = expander ?? new();
+    private static readonly EnumerationOptions SkipReparseOptions = new()
+    {
+        AttributesToSkip = FileAttributes.ReparsePoint,
+        IgnoreInaccessible = true
+    };
 
     // --- Public API --------------------------------------------------
     public Task<ScanResult> AnalyzeAsync(CleanerEntry entry, IProgress<string>? progress = null, CancellationToken token = default)
@@ -118,8 +123,9 @@ public class CleaningService(PathExpander? expander = null)
         IEnumerable<string> dirs;
         try
         {
-            dirs = Directory.EnumerateDirectories(root)
-                            .Where(d => (File.GetAttributes(d) & FileAttributes.ReparsePoint) == 0);
+            // Skip reparse points and inaccessible directories directly via OS enumerator,
+            // avoiding per-directory File.GetAttributes Win32 syscalls and LINQ allocations.
+            dirs = Directory.EnumerateDirectories(root, "*", SkipReparseOptions);
         }
         catch (Exception ex) { Debug.WriteLine($"[CleaningService.EnumerateFilesSafe] Error enumerating directories in {root}: {ex.Message}"); yield break; }
 
@@ -293,7 +299,9 @@ public class CleaningService(PathExpander? expander = null)
                                        IntPtr.Zero, OPEN_EXISTING, 0, IntPtr.Zero);
         if (handle.IsInvalid) return -1;   // locked; skip!
 
-        try { return new FileInfo(path).Length; }
+        // Query length directly via RandomAccess on the open SafeFileHandle to avoid
+        // instantiating FileInfo heap objects and redundant Win32 path lookups.
+        try { return RandomAccess.GetLength(handle); }
         catch (Exception ex) { Debug.WriteLine($"[CleaningService.TryGetDeletableSize] Failed to get length of {path}: {ex.Message}"); return -1; }
     }
 
