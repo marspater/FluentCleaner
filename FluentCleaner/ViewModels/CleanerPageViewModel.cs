@@ -784,6 +784,11 @@ public record ScanResultLine(string AppName, int FileCount, int RegCount, string
     public string Summary => FileCount > 0 || RegCount > 0
         ? $"{FileCount} {ResourceService.Get("SuffixFilesSingular")}, {RegCount} {ResourceService.Get("SuffixRegistryItems")}  {Size}"
         : ResourceService.Get("LabelCleaningComplete");
+
+    // Accessible screen reader label
+    public string AccessibleName => string.IsNullOrEmpty(CountSummary)
+        ? $"{AppName}, {Size}"
+        : $"{AppName}, {CountSummary}, {Size}";
 }
 
 public record DetailLine(string Text, bool IsHeader)
