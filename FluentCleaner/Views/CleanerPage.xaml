@@ -131,6 +131,7 @@
                                                     <CheckBox Grid.Column="0"
                                                               IsChecked="{x:Bind IsSelected, Mode=TwoWay}"
                                                               ToolTipService.ToolTip="{x:Bind Warning}"
+                                                              AutomationProperties.Name="{x:Bind Name}"
                                                               MinWidth="0"
                                                               Padding="6,3">
                                                         <StackPanel Orientation="Horizontal" Spacing="4">
@@ -302,6 +303,7 @@
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="vm:ScanResultLine">
                             <Grid Padding="12,7"
+                                  AutomationProperties.Name="{x:Bind AccessibleName}"
                                   BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
                                   BorderThickness="0,0,0,1">
                                 <Grid.ColumnDefinitions>
@@ -364,7 +366,8 @@
                     </ListView.ItemContainerStyle>
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="vm:DetailLine">
-                            <Grid Padding="12,3">
+                            <Grid Padding="12,3"
+                                  AutomationProperties.Name="{x:Bind Text}">
                                 <!-- Section header: "Files (3988)" or "Registry (2)" -->
                                 <TextBlock Text="{x:Bind Text}"
                                            FontSize="11"

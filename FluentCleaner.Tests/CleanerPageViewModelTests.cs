@@ -57,4 +57,19 @@ public class CleanerPageViewModelTests
         // Ensure execution completed without throwing
         Assert.False(vm.IsBusy);
     }
+
+    [Fact]
+    public void ScanResultLine_AccessibleName_FormatsWithCountSummary()
+    {
+        var line = new ScanResultLine("Google Chrome", 10, 2, "1.5 MB");
+        Assert.Contains("Google Chrome", line.AccessibleName);
+        Assert.Contains("1.5 MB", line.AccessibleName);
+    }
+
+    [Fact]
+    public void ScanResultLine_AccessibleName_FormatsWithoutCountSummary()
+    {
+        var line = new ScanResultLine("Empty App", 0, 0, "0 B");
+        Assert.Equal("Empty App, 0 B", line.AccessibleName);
+    }
 }
