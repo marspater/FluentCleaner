@@ -40,6 +40,8 @@
                               HorizontalAlignment="Right"
                               VerticalAlignment="Center"
                               FontSize="11"
+                              AutomationProperties.Name="Filter extensions by category"
+                              ToolTipService.ToolTip="Filter extensions"
                               SelectionChanged="comboFilter_SelectionChanged" />
                 </Grid>
 

@@ -118,6 +118,7 @@
                                              HorizontalAlignment="Right"
                                              OnContent="" OffContent=""
                                              MinWidth="0"
+                                             AutomationProperties.Name="{x:Bind Name}"
                                              Visibility="{x:Bind IniVisibility}" />
                             </Grid>
                         </Border>
