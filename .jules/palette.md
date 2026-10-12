@@ -1,0 +1,3 @@
+## 2026-03-30 - WinUI 3 CheckBox and ToggleSwitch Screen Reader Accessibility
+**Learning:** When WinUI 3 `CheckBox` controls contain complex layout panel children (e.g., `StackPanel`) or `ToggleSwitch` controls have empty content (`OnContent="" OffContent=""`), screen readers (Narrator/NVDA) cannot automatically infer the control name, announcing uninformative labels like "Unchecked, Checkbox" or "ToggleSwitch, Off".
+**Action:** Explicitly set `AutomationProperties.Name` on `CheckBox` and `ToggleSwitch` controls (bound to item names or descriptive strings) whenever layout children or custom empty content properties are used.
