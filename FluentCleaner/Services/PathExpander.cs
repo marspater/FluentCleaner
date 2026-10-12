@@ -44,6 +44,14 @@ public class PathExpander
 
     public string ExpandVariables(string path)
     {
+        // Performance optimization: Fast-path return if path has no variable delimiters.
+        if (path.IndexOf('%') < 0)
+        {
+            if (path.Length == 2 && char.IsLetter(path[0]) && path[1] == ':')
+                return path + Path.DirectorySeparatorChar;
+            return path;
+        }
+
         foreach (var (token, value) in _vars)
             path = path.Replace(token, value, StringComparison.OrdinalIgnoreCase);
 
@@ -89,6 +97,13 @@ public class PathExpander
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string[]> _dirEntriesCache = new(StringComparer.OrdinalIgnoreCase);
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string[]> _subDirsCache = new(StringComparer.OrdinalIgnoreCase);
 
+    private static readonly EnumerationOptions ReparseSkipOptions = new()
+    {
+        AttributesToSkip = FileAttributes.ReparsePoint,
+        IgnoreInaccessible = true,
+        RecurseSubdirectories = false
+    };
+
     public static void ClearCache()
     {
         _dirExistsCache.Clear();
@@ -98,6 +113,13 @@ public class PathExpander
 
     private static void ResolveRecursive(string path, HashSet<string> results)
     {
+        // Performance optimization: Fast-path check for wildcards before path splitting to avoid string array allocations.
+        if (path.AsSpan().IndexOfAny('*', '?') < 0)
+        {
+            results.Add(path);
+            return;
+        }
+
         var parts = path.Split(new[] { '\\', '/' }, StringSplitOptions.None);
 
         // Find the first segment that contains a wildcard
@@ -142,13 +164,7 @@ public class PathExpander
                 {
                     try
                     {
-                        return Directory.GetDirectories(basePath, wildcard)
-                               .Where(d =>
-                               {
-                                   try { return (File.GetAttributes(d) & FileAttributes.ReparsePoint) == 0; }
-                                   catch { return false; }
-                               })
-                               .ToArray();
+                        return Directory.GetDirectories(basePath, wildcard, ReparseSkipOptions);
                     }
                     catch { return Array.Empty<string>(); }
                 });

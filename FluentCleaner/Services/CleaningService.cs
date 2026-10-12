@@ -96,6 +96,13 @@ public class CleaningService(PathExpander? expander = null)
         }
     }
 
+    private static readonly EnumerationOptions ReparseSkipOptions = new()
+    {
+        AttributesToSkip = FileAttributes.ReparsePoint,
+        IgnoreInaccessible = true,
+        RecurseSubdirectories = false
+    };
+
     /* Walks the tree once; lets the OS match files per pattern (FindFirstFile knows about
        8.3 short-name aliases, we don't). HashSet drops files that match more than one pattern.
        Reparse points skipped to prevent infinite junction loop traps. */
@@ -118,8 +125,7 @@ public class CleaningService(PathExpander? expander = null)
         IEnumerable<string> dirs;
         try
         {
-            dirs = Directory.EnumerateDirectories(root)
-                            .Where(d => (File.GetAttributes(d) & FileAttributes.ReparsePoint) == 0);
+            dirs = Directory.EnumerateDirectories(root, "*", ReparseSkipOptions);
         }
         catch (Exception ex) { Debug.WriteLine($"[CleaningService.EnumerateFilesSafe] Error enumerating directories in {root}: {ex.Message}"); yield break; }
 
@@ -293,7 +299,7 @@ public class CleaningService(PathExpander? expander = null)
                                        IntPtr.Zero, OPEN_EXISTING, 0, IntPtr.Zero);
         if (handle.IsInvalid) return -1;   // locked; skip!
 
-        try { return new FileInfo(path).Length; }
+        try { return RandomAccess.GetLength(handle); }
         catch (Exception ex) { Debug.WriteLine($"[CleaningService.TryGetDeletableSize] Failed to get length of {path}: {ex.Message}"); return -1; }
     }
 
