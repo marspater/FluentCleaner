@@ -1,0 +1,3 @@
+## 2025-05-18 - Accessible Names for Complex WinUI 3 CheckBox and ToggleSwitch Controls
+**Learning:** In WinUI 3 desktop applications, when `CheckBox` controls contain complex layout panel children (e.g. `StackPanel` containing `FontIcon` or `TextBlock`) or `ToggleSwitch` controls specify empty `OnContent=""` and `OffContent=""`, screen readers (Narrator, NVDA) fail to automatically extract or infer an accessible name.
+**Action:** Always explicitly set `AutomationProperties.Name="{x:Bind ...}"` directly on `CheckBox` and `ToggleSwitch` controls when using custom child content or suppressing `OnContent`/`OffContent`.
