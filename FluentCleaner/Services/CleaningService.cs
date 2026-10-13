@@ -96,6 +96,15 @@ public class CleaningService(PathExpander? expander = null)
         }
     }
 
+    // Delegate reparse point (junctions/symlinks) filtering and inaccessible folder skipping directly
+    // to the underlying OS directory enumerator to eliminate per-directory File.GetAttributes Win32 syscalls
+    // and LINQ iterator allocations.
+    private static readonly EnumerationOptions SafeEnumerationOptions = new()
+    {
+        AttributesToSkip = FileAttributes.ReparsePoint,
+        IgnoreInaccessible = true
+    };
+
     /* Walks the tree once; lets the OS match files per pattern (FindFirstFile knows about
        8.3 short-name aliases, we don't). HashSet drops files that match more than one pattern.
        Reparse points skipped to prevent infinite junction loop traps. */
@@ -106,7 +115,7 @@ public class CleaningService(PathExpander? expander = null)
         {
             token.ThrowIfCancellationRequested();
             IEnumerable<string> files;
-            try { files = Directory.EnumerateFiles(root, p); }
+            try { files = Directory.EnumerateFiles(root, p, SafeEnumerationOptions); }
             catch (Exception ex) { Debug.WriteLine($"[CleaningService.EnumerateFilesSafe] Error enumerating files in {root} with pattern {p}: {ex.Message}"); files = []; }
             foreach (var f in files)
                 if (seen.Add(f))   // skip if another pattern already matched this file
@@ -118,8 +127,7 @@ public class CleaningService(PathExpander? expander = null)
         IEnumerable<string> dirs;
         try
         {
-            dirs = Directory.EnumerateDirectories(root)
-                            .Where(d => (File.GetAttributes(d) & FileAttributes.ReparsePoint) == 0);
+            dirs = Directory.EnumerateDirectories(root, "*", SafeEnumerationOptions);
         }
         catch (Exception ex) { Debug.WriteLine($"[CleaningService.EnumerateFilesSafe] Error enumerating directories in {root}: {ex.Message}"); yield break; }
 
@@ -293,7 +301,9 @@ public class CleaningService(PathExpander? expander = null)
                                        IntPtr.Zero, OPEN_EXISTING, 0, IntPtr.Zero);
         if (handle.IsInvalid) return -1;   // locked; skip!
 
-        try { return new FileInfo(path).Length; }
+        // Reuse the open SafeFileHandle with RandomAccess.GetLength to read file size directly,
+        // avoiding FileInfo heap allocations and duplicate Win32 GetFileAttributesEx path lookups.
+        try { return RandomAccess.GetLength(handle); }
         catch (Exception ex) { Debug.WriteLine($"[CleaningService.TryGetDeletableSize] Failed to get length of {path}: {ex.Message}"); return -1; }
     }
 
