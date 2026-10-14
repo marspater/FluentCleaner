@@ -7,6 +7,13 @@ public class PathExpander
 {
     private readonly Dictionary<string, string> _vars = BuildVarMap();
 
+    private static readonly EnumerationOptions SafeDirEnumOptions = new()
+    {
+        AttributesToSkip = FileAttributes.ReparsePoint,
+        IgnoreInaccessible = true,
+        RecurseSubdirectories = false
+    };
+
     private static Dictionary<string, string> BuildVarMap()
     {
         var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -142,13 +149,7 @@ public class PathExpander
                 {
                     try
                     {
-                        return Directory.GetDirectories(basePath, wildcard)
-                               .Where(d =>
-                               {
-                                   try { return (File.GetAttributes(d) & FileAttributes.ReparsePoint) == 0; }
-                                   catch { return false; }
-                               })
-                               .ToArray();
+                        return Directory.GetDirectories(basePath, wildcard, SafeDirEnumOptions);
                     }
                     catch { return Array.Empty<string>(); }
                 });
