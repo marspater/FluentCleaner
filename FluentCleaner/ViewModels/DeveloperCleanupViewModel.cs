@@ -29,6 +29,13 @@ public partial class TrashDirectoryViewModel : ObservableObject
 
 public partial class DeveloperCleanupViewModel : ObservableObject
 {
+    private static readonly EnumerationOptions SafeDirEnumOptions = new()
+    {
+        AttributesToSkip = FileAttributes.ReparsePoint,
+        IgnoreInaccessible = true,
+        RecurseSubdirectories = false
+    };
+
     [ObservableProperty] public partial string RootPath { get; set; } = "";
     [ObservableProperty] public partial bool IsBusy { get; set; }
     [ObservableProperty] public partial string StatusText { get; set; } = "Select a directory to scan for developer workspace trash.";
@@ -306,22 +313,10 @@ public partial class DeveloperCleanupViewModel : ObservableObject
         
         try
         {
-            var dirs = Directory.EnumerateDirectories(path);
+            var dirs = Directory.EnumerateDirectories(path, "*", SafeDirEnumOptions);
             foreach (var dir in dirs)
             {
                 token.ThrowIfCancellationRequested();
-                
-                try
-                {
-                    if ((File.GetAttributes(dir) & FileAttributes.ReparsePoint) != 0)
-                        continue;
-                }
-                catch (OperationCanceledException) { throw; }
-                catch (Exception ex) when (ex is UnauthorizedAccessException or DirectoryNotFoundException or IOException or System.Security.SecurityException)
-                {
-                    System.Diagnostics.Debug.WriteLine($"[DeveloperCleanupViewModel.ScanDirectory] Error reading attributes for {dir}: {ex.Message}");
-                    continue;
-                }
 
                 var name = Path.GetFileName(dir);
                 
