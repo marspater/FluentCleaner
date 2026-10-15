@@ -5,3 +5,7 @@
 ## 2026-09-04 - Fast-pathing PathExpander string operations
 **Learning:** In `PathExpander`, checking `path.IndexOf('%') >= 0` and `path.IndexOfAny(WildcardChars) < 0` before running variable replacement loops and string splitting bypasses expensive dictionary enumerations and array allocations for literal paths.
 **Action:** Always check for character triggers (`%`, `*`, `?`) before applying string replacement routines or regex/splitting operations in path expansion logic.
+
+## 2026-09-06 - Native OS Reparse Point Filtering and Direct Handle File Length Retrieval
+**Learning:** During recursive file and folder scans in `CleaningService`, `PathExpander`, `DeveloperCleanupViewModel`, and `AnalyzerViewModel`, calling `File.GetAttributes(d)` for every directory in LINQ `.Where` filters incurs O(N) extra Win32 syscalls and enumerator allocations. Passing `EnumerationOptions { AttributesToSkip = FileAttributes.ReparsePoint, IgnoreInaccessible = true }` directly to `Directory.EnumerateDirectories` / `GetDirectories` delegates reparse point skipping to the OS kernel enumerator. Furthermore, using `RandomAccess.GetLength(handle)` on open file handles in `CleaningService.TryGetDeletableSize` avoids allocating `FileInfo` heap objects and duplicate file attribute lookups.
+**Action:** Always pass static `EnumerationOptions` with `AttributesToSkip = FileAttributes.ReparsePoint` for directory tree enumerations, and use `RandomAccess.GetLength(handle)` on open file handles instead of `new FileInfo(path).Length`.
