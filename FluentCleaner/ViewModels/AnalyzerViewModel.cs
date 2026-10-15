@@ -51,6 +51,12 @@ public partial class AnalyzerItemViewModel : ObservableObject
 
 public partial class AnalyzerViewModel : ObservableObject
 {
+    private static readonly EnumerationOptions SkipReparseOptions = new()
+    {
+        AttributesToSkip = FileAttributes.ReparsePoint,
+        IgnoreInaccessible = true
+    };
+
     [ObservableProperty] public partial string RootPath { get; set; } = "";
     [ObservableProperty] public partial bool IsBusy { get; set; }
     [ObservableProperty] public partial string StatusText { get; set; } = "Select a drive or directory to analyze.";
@@ -256,11 +262,9 @@ public partial class AnalyzerViewModel : ObservableObject
                 size += file.Length;
             }
             
-            foreach (var subDir in dirInfo.EnumerateDirectories())
+            foreach (var subDir in dirInfo.EnumerateDirectories("*", SkipReparseOptions))
             {
                 token.ThrowIfCancellationRequested();
-                if ((subDir.Attributes & FileAttributes.ReparsePoint) != 0) continue;
-                
                 size += CalculateDirectorySize(subDir.FullName, token, progress);
             }
         }
