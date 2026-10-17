@@ -89,6 +89,13 @@ public class PathExpander
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string[]> _dirEntriesCache = new(StringComparer.OrdinalIgnoreCase);
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string[]> _subDirsCache = new(StringComparer.OrdinalIgnoreCase);
 
+    // Skip reparse points and inaccessible folders directly via OS directory enumerator
+    private static readonly EnumerationOptions SkipReparseOptions = new()
+    {
+        AttributesToSkip = FileAttributes.ReparsePoint,
+        IgnoreInaccessible = true
+    };
+
     public static void ClearCache()
     {
         _dirExistsCache.Clear();
@@ -142,13 +149,7 @@ public class PathExpander
                 {
                     try
                     {
-                        return Directory.GetDirectories(basePath, wildcard)
-                               .Where(d =>
-                               {
-                                   try { return (File.GetAttributes(d) & FileAttributes.ReparsePoint) == 0; }
-                                   catch { return false; }
-                               })
-                               .ToArray();
+                        return Directory.GetDirectories(basePath, wildcard, SkipReparseOptions);
                     }
                     catch { return Array.Empty<string>(); }
                 });
