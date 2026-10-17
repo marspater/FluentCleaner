@@ -1,0 +1,3 @@
+## 2026-03-31 - Explicit Accessible Names on WinUI 3 Controls with Child Layout Panels
+**Learning:** In WinUI 3, when controls such as `CheckBox` contain layout panels (`StackPanel`, `Grid`) or `ToggleSwitch` controls use empty `OnContent`/`OffContent`, screen readers (Narrator/NVDA) fail to extract a meaningful accessible name automatically and announce generic/unhelpful control roles.
+**Action:** Always set `AutomationProperties.Name="{x:Bind ...}"` explicitly on `CheckBox`, `ToggleSwitch`, and DataTemplate `Grid` items containing nested visual hierarchies to guarantee clear screen reader feedback.
