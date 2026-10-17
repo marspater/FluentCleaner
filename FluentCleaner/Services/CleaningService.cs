@@ -15,6 +15,13 @@ public class CleaningService(PathExpander? expander = null)
 {
     private readonly PathExpander _expander = expander ?? new();
 
+    // Skip reparse points and inaccessible folders directly via OS directory enumerator
+    private static readonly EnumerationOptions SkipReparseOptions = new()
+    {
+        AttributesToSkip = FileAttributes.ReparsePoint,
+        IgnoreInaccessible = true
+    };
+
     // --- Public API --------------------------------------------------
     public Task<ScanResult> AnalyzeAsync(CleanerEntry entry, IProgress<string>? progress = null, CancellationToken token = default)
         => Task.Run(() => Analyze(entry, progress, token), token);
@@ -118,8 +125,7 @@ public class CleaningService(PathExpander? expander = null)
         IEnumerable<string> dirs;
         try
         {
-            dirs = Directory.EnumerateDirectories(root)
-                            .Where(d => (File.GetAttributes(d) & FileAttributes.ReparsePoint) == 0);
+            dirs = Directory.EnumerateDirectories(root, "*", SkipReparseOptions);
         }
         catch (Exception ex) { Debug.WriteLine($"[CleaningService.EnumerateFilesSafe] Error enumerating directories in {root}: {ex.Message}"); yield break; }
 
