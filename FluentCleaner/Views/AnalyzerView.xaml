@@ -87,6 +87,7 @@
                                 
                                 <ToggleSwitch Grid.Column="1"
                                               Header="Use scanned folder size as baseline"
+                                              AutomationProperties.Name="Use scanned folder size as baseline"
                                               IsOn="{x:Bind ViewModel.UseScannedRootPercentage, Mode=TwoWay}"
                                               OnContent="" OffContent=""
                                               FontSize="12"
