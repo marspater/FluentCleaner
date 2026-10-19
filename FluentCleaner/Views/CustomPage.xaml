@@ -103,6 +103,7 @@
                                 <!-- Action: Run (scripts) or Toggle (INI) -->
                                 <Button Grid.Row="2"
                                         Tag="{x:Bind}" Click="RunScript_Click"
+                                        AutomationProperties.Name="{x:Bind Name}"
                                         HorizontalAlignment="Center"
                                         Padding="20,5"
                                         Style="{StaticResource AccentButtonStyle}"
@@ -115,6 +116,7 @@
 
                                 <ToggleSwitch Grid.Row="2"
                                              IsOn="{x:Bind IsEnabled, Mode=TwoWay}"
+                                             AutomationProperties.Name="{x:Bind Name}"
                                              HorizontalAlignment="Right"
                                              OnContent="" OffContent=""
                                              MinWidth="0"
