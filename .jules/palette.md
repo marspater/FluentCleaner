@@ -1,0 +1,3 @@
+## 2026-03-31 - WinUI 3 CheckBox and DataTemplate Accessibility
+**Learning:** In WinUI 3 controls like `CheckBox` with composite children (`StackPanel` / `TextBlock`) or `ToggleSwitch` controls with empty content (`OnContent="" OffContent=""`), screen readers do not automatically derive a text label. Explicitly setting `AutomationProperties.Name="{x:Bind ...}"` on the control or data template root ensures Narrator and NVDA announce the correct target name when focused.
+**Action:** Always set `AutomationProperties.Name="{x:Bind ...}"` directly on interactive WinUI 3 elements when child layout containers or custom item templates are used.
