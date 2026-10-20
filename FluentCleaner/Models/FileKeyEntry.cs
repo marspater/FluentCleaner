@@ -20,13 +20,23 @@ public class FileKeyEntry
         set => field = value?.Trim() ?? "";
     } = "";
 
+    private string _pattern = "*.*";
+    private string[] _patterns = ["*.*"];
+
     /* Semicolon-separated file filter(s), e.g. "*.tmp" or "*.log;*.bak".
        Defaults to "*.*" when no pattern is specified in the ini. */
     public string Pattern
     {
-        get => field;
-        set => field = string.IsNullOrWhiteSpace(value) ? "*.*" : value.Trim();
-    } = "*.*";
+        get => _pattern;
+        set
+        {
+            _pattern = string.IsNullOrWhiteSpace(value) ? "*.*" : value.Trim();
+            _patterns = _pattern.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        }
+    }
+
+    // Cached pre-split pattern array to avoid repeated string splitting allocations during scan passes.
+    public string[] Patterns => _patterns;
 
     // Whether to recurse into subdirectories and whether to remove empty dirs afterwards.
     public FileKeyFlag Flag { get; set; } = FileKeyFlag.None;

@@ -76,8 +76,7 @@ public class CleaningService(PathExpander? expander = null)
     {
         bool recurse = fileKey.Flag is FileKeyFlag.Recurse or FileKeyFlag.RemoveSelf;
 
-        var patterns = fileKey.Pattern
-            .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var patterns = fileKey.Patterns;
 
         foreach (var dir in _expander.ResolvePaths(fileKey.Path))
         {
@@ -102,11 +101,17 @@ public class CleaningService(PathExpander? expander = null)
     private static IEnumerable<string> EnumerateFilesSafe(string root, string[] patterns, bool recurse, IProgress<string>? progress = null, CancellationToken token = default)
     {
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var enumOptions = new EnumerationOptions
+        {
+            AttributesToSkip = FileAttributes.ReparsePoint,
+            IgnoreInaccessible = true
+        };
+
         foreach (var p in patterns)
         {
             token.ThrowIfCancellationRequested();
             IEnumerable<string> files;
-            try { files = Directory.EnumerateFiles(root, p); }
+            try { files = Directory.EnumerateFiles(root, p, enumOptions); }
             catch (Exception ex) { Debug.WriteLine($"[CleaningService.EnumerateFilesSafe] Error enumerating files in {root} with pattern {p}: {ex.Message}"); files = []; }
             foreach (var f in files)
                 if (seen.Add(f))   // skip if another pattern already matched this file
@@ -118,8 +123,7 @@ public class CleaningService(PathExpander? expander = null)
         IEnumerable<string> dirs;
         try
         {
-            dirs = Directory.EnumerateDirectories(root)
-                            .Where(d => (File.GetAttributes(d) & FileAttributes.ReparsePoint) == 0);
+            dirs = Directory.EnumerateDirectories(root, "*", enumOptions);
         }
         catch (Exception ex) { Debug.WriteLine($"[CleaningService.EnumerateFilesSafe] Error enumerating directories in {root}: {ex.Message}"); yield break; }
 
@@ -279,21 +283,28 @@ public class CleaningService(PathExpander? expander = null)
     {
         if (ex.Type is ExcludeType.Reg) return;
         foreach (var p in _expander.ResolvePaths(ex.Path))
-            rules.Add(new ExclusionRule(p.TrimEnd('\\') + "\\", ex.Pattern));
+            rules.Add(new ExclusionRule(p.TrimEnd('\\', '/') + Path.DirectorySeparatorChar, ex.Pattern));
     }
 
     // Probe whether a file is deletable right now by requesting DELETE access via CreateFileW.
     private static long TryGetDeletableSize(string path)
     {
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            try { return new FileInfo(path).Length; }
+            catch { return -1; }
+        }
+
         const uint DELETE = 0x00010000;
+        const uint FILE_READ_ATTRIBUTES = 0x0080;
         const uint FILE_SHARE_ALL = 0x7;   // Read | Write | Delete
         const uint OPEN_EXISTING = 3;
 
-        using var handle = CreateFileW(path, DELETE, FILE_SHARE_ALL,
+        using var handle = CreateFileW(path, DELETE | FILE_READ_ATTRIBUTES, FILE_SHARE_ALL,
                                        IntPtr.Zero, OPEN_EXISTING, 0, IntPtr.Zero);
         if (handle.IsInvalid) return -1;   // locked; skip!
 
-        try { return new FileInfo(path).Length; }
+        try { return RandomAccess.GetLength(handle); }
         catch (Exception ex) { Debug.WriteLine($"[CleaningService.TryGetDeletableSize] Failed to get length of {path}: {ex.Message}"); return -1; }
     }
 
@@ -318,12 +329,11 @@ public class CleaningService(PathExpander? expander = null)
 
             if (Pattern.Contains('*') || Pattern.Contains('?'))
             {
-                var fileName = Path.GetFileName(filePath);
+                var fileName = Path.GetFileName(filePath.AsSpan());
                 return FileSystemName.MatchesSimpleExpression(Pattern, fileName, ignoreCase: true);
             }
 
-            var relativePath = filePath[DirPrefix.Length..];
-            return relativePath.Equals(Pattern, StringComparison.OrdinalIgnoreCase);
+            return filePath.AsSpan(DirPrefix.Length).Equals(Pattern, StringComparison.OrdinalIgnoreCase);
         }
     }
 
