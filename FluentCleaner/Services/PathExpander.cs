@@ -5,7 +5,9 @@ namespace FluentCleaner.Services;
 2. Walk directory trees where path segments contain * wildcards */
 public class PathExpander
 {
-    private readonly Dictionary<string, string> _vars = BuildVarMap();
+    private static readonly Dictionary<string, string> _vars = BuildVarMap();
+    private static readonly char[] WildcardChars = ['*', '?'];
+    private static readonly EnumerationOptions ReparseSkipOptions = new() { AttributesToSkip = FileAttributes.ReparsePoint, IgnoreInaccessible = true };
 
     private static Dictionary<string, string> BuildVarMap()
     {
@@ -44,11 +46,19 @@ public class PathExpander
 
     public string ExpandVariables(string path)
     {
-        foreach (var (token, value) in _vars)
-            path = path.Replace(token, value, StringComparison.OrdinalIgnoreCase);
+        // Fast-path: Skip replacement loops if no environment variable tokens exist
+        if (path.IndexOf('%') >= 0)
+        {
+            foreach (var (token, value) in _vars)
+            {
+                path = path.Replace(token, value, StringComparison.OrdinalIgnoreCase);
+                if (path.IndexOf('%') < 0) break; // Early exit once all % tokens are replaced
+            }
 
-        // Let the OS handle any remaining %VAR% tokens we don't know about
-        path = Environment.ExpandEnvironmentVariables(path);
+            // Let the OS handle any remaining %VAR% tokens we don't know about
+            if (path.IndexOf('%') >= 0)
+                path = Environment.ExpandEnvironmentVariables(path);
+        }
 
         // %SystemDrive% (and any other bare drive reference) expands to "C:" without a
         // trailing backslash because BuildVarMap strips it to avoid double-backslashes in
@@ -98,6 +108,13 @@ public class PathExpander
 
     private static void ResolveRecursive(string path, HashSet<string> results)
     {
+        // Fast-path: Avoid string.Split array allocations if the path contains no wildcards
+        if (path.IndexOfAny(WildcardChars) < 0)
+        {
+            results.Add(path);
+            return;
+        }
+
         var parts = path.Split(new[] { '\\', '/' }, StringSplitOptions.None);
 
         // Find the first segment that contains a wildcard
@@ -142,13 +159,8 @@ public class PathExpander
                 {
                     try
                     {
-                        return Directory.GetDirectories(basePath, wildcard)
-                               .Where(d =>
-                               {
-                                   try { return (File.GetAttributes(d) & FileAttributes.ReparsePoint) == 0; }
-                                   catch { return false; }
-                               })
-                               .ToArray();
+                        // Delegate reparse point filtering natively to the OS enumerator
+                        return Directory.GetDirectories(basePath, wildcard, ReparseSkipOptions);
                     }
                     catch { return Array.Empty<string>(); }
                 });
