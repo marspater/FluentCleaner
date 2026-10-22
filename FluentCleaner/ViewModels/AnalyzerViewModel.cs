@@ -172,7 +172,7 @@ public partial class AnalyzerViewModel : ObservableObject
                 // Enumerate subdirectories
                 try
                 {
-                    var dirs = Directory.GetDirectories(RootPath);
+                    var dirs = Directory.GetDirectories(RootPath, "*", SafeEnumerationOptions);
                     foreach (var dir in dirs)
                     {
                         token.ThrowIfCancellationRequested();
@@ -190,7 +190,7 @@ public partial class AnalyzerViewModel : ObservableObject
                 // Enumerate files
                 try
                 {
-                    var files = Directory.EnumerateFiles(RootPath);
+                    var files = Directory.EnumerateFiles(RootPath, "*", SafeEnumerationOptions);
                     foreach (var file in files)
                     {
                         token.ThrowIfCancellationRequested();
@@ -244,6 +244,13 @@ public partial class AnalyzerViewModel : ObservableObject
         }
     }
 
+    private static readonly EnumerationOptions SafeEnumerationOptions = new()
+    {
+        AttributesToSkip = FileAttributes.ReparsePoint,
+        IgnoreInaccessible = true,
+        RecurseSubdirectories = false
+    };
+
     private long CalculateDirectorySize(string path, CancellationToken token, IProgress<string> progress)
     {
         long size = 0;
@@ -256,11 +263,9 @@ public partial class AnalyzerViewModel : ObservableObject
                 size += file.Length;
             }
             
-            foreach (var subDir in dirInfo.EnumerateDirectories())
+            foreach (var subDir in dirInfo.EnumerateDirectories("*", SafeEnumerationOptions))
             {
                 token.ThrowIfCancellationRequested();
-                if ((subDir.Attributes & FileAttributes.ReparsePoint) != 0) continue;
-                
                 size += CalculateDirectorySize(subDir.FullName, token, progress);
             }
         }
