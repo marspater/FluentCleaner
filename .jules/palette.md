@@ -1,0 +1,3 @@
+## 2026-09-06 - WinUI 3 DataTemplate Accessibility for Complex Controls
+**Learning:** In WinUI 3, controls like `CheckBox` with complex layout children (e.g., `StackPanel`) or `ToggleSwitch` with empty `OnContent`/`OffContent` inside `DataTemplate`s do not automatically synthesize screen reader names from child elements. Explicitly specifying `AutomationProperties.Name="{x:Bind ...}"` on the interactive control provides screen reader (Narrator/NVDA) accessibility without altering the visual design layout.
+**Action:** Always add `AutomationProperties.Name="{x:Bind ...}"` to interactive controls in `DataTemplate`s when using custom child layouts or hidden content strings.
