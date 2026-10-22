@@ -300,28 +300,23 @@ public partial class DeveloperCleanupViewModel : ObservableObject
         di.Delete(true);
     }
 
+    private static readonly EnumerationOptions SafeEnumerationOptions = new()
+    {
+        AttributesToSkip = FileAttributes.ReparsePoint,
+        IgnoreInaccessible = true,
+        RecurseSubdirectories = false
+    };
+
     private void ScanDirectory(string path, List<string> results, List<string> targets, CancellationToken token, IProgress<string> progress)
     {
         token.ThrowIfCancellationRequested();
         
         try
         {
-            var dirs = Directory.EnumerateDirectories(path);
+            var dirs = Directory.EnumerateDirectories(path, "*", SafeEnumerationOptions);
             foreach (var dir in dirs)
             {
                 token.ThrowIfCancellationRequested();
-                
-                try
-                {
-                    if ((File.GetAttributes(dir) & FileAttributes.ReparsePoint) != 0)
-                        continue;
-                }
-                catch (OperationCanceledException) { throw; }
-                catch (Exception ex) when (ex is UnauthorizedAccessException or DirectoryNotFoundException or IOException or System.Security.SecurityException)
-                {
-                    System.Diagnostics.Debug.WriteLine($"[DeveloperCleanupViewModel.ScanDirectory] Error reading attributes for {dir}: {ex.Message}");
-                    continue;
-                }
 
                 var name = Path.GetFileName(dir);
                 
@@ -403,10 +398,9 @@ public partial class DeveloperCleanupViewModel : ObservableObject
                 }
             }
 
-            foreach (var sub in di.EnumerateDirectories())
+            foreach (var sub in di.EnumerateDirectories("*", SafeEnumerationOptions))
             {
                 token.ThrowIfCancellationRequested();
-                if ((sub.Attributes & FileAttributes.ReparsePoint) != 0) continue;
                 size += CalculateDirectorySize(sub.FullName, token);
             }
         }

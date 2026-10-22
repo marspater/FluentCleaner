@@ -96,9 +96,18 @@ public class CleaningService(PathExpander? expander = null)
         }
     }
 
+    // Options for skipping reparse points and inaccessible folders natively in the OS enumerator,
+    // avoiding expensive per-directory File.GetAttributes Win32 syscalls and LINQ allocations.
+    private static readonly EnumerationOptions SafeEnumerationOptions = new()
+    {
+        AttributesToSkip = FileAttributes.ReparsePoint,
+        IgnoreInaccessible = true,
+        RecurseSubdirectories = false
+    };
+
     /* Walks the tree once; lets the OS match files per pattern (FindFirstFile knows about
        8.3 short-name aliases, we don't). HashSet drops files that match more than one pattern.
-       Reparse points skipped to prevent infinite junction loop traps. */
+       Reparse points skipped natively by the OS enumerator to prevent infinite junction loop traps. */
     private static IEnumerable<string> EnumerateFilesSafe(string root, string[] patterns, bool recurse, IProgress<string>? progress = null, CancellationToken token = default)
     {
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -106,7 +115,7 @@ public class CleaningService(PathExpander? expander = null)
         {
             token.ThrowIfCancellationRequested();
             IEnumerable<string> files;
-            try { files = Directory.EnumerateFiles(root, p); }
+            try { files = Directory.EnumerateFiles(root, p, SafeEnumerationOptions); }
             catch (Exception ex) { Debug.WriteLine($"[CleaningService.EnumerateFilesSafe] Error enumerating files in {root} with pattern {p}: {ex.Message}"); files = []; }
             foreach (var f in files)
                 if (seen.Add(f))   // skip if another pattern already matched this file
@@ -118,8 +127,7 @@ public class CleaningService(PathExpander? expander = null)
         IEnumerable<string> dirs;
         try
         {
-            dirs = Directory.EnumerateDirectories(root)
-                            .Where(d => (File.GetAttributes(d) & FileAttributes.ReparsePoint) == 0);
+            dirs = Directory.EnumerateDirectories(root, "*", SafeEnumerationOptions);
         }
         catch (Exception ex) { Debug.WriteLine($"[CleaningService.EnumerateFilesSafe] Error enumerating directories in {root}: {ex.Message}"); yield break; }
 
@@ -293,7 +301,12 @@ public class CleaningService(PathExpander? expander = null)
                                        IntPtr.Zero, OPEN_EXISTING, 0, IntPtr.Zero);
         if (handle.IsInvalid) return -1;   // locked; skip!
 
-        try { return new FileInfo(path).Length; }
+        try
+        {
+            // Query length directly from the open file handle to avoid allocating a FileInfo object
+            // and issuing a duplicate File.GetAttributes / FindFirstFile disk path query.
+            return RandomAccess.GetLength(handle);
+        }
         catch (Exception ex) { Debug.WriteLine($"[CleaningService.TryGetDeletableSize] Failed to get length of {path}: {ex.Message}"); return -1; }
     }
 
