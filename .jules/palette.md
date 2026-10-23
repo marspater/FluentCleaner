@@ -1,0 +1,3 @@
+## 2026-03-31 - Accessible Names for Unlabeled WinUI ToggleSwitch Controls
+**Learning:** In WinUI 3, `ToggleSwitch` controls styled with empty `OnContent=""` and `OffContent=""` (where textual descriptions sit in adjacent layout columns) are not announced with a descriptive name by screen readers (Narrator/NVDA). Setting `AutomationProperties.Name` either via `{x:Bind Name}` or via `x:Uid` in localized `.resw` files (`[Uid].[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name`) ensures screen readers announce the exact context without altering visual design.
+**Action:** Always verify `AutomationProperties.Name` on icon buttons and unlabeled `ToggleSwitch` or `CheckBox` controls in WinUI XAML views.
