@@ -142,7 +142,8 @@
                                         Converter={StaticResource BoolToVisibilityConverter}}" />
 
                             <!-- Toggle -->
-                            <ToggleSwitch Grid.Column="3"
+                            <ToggleSwitch x:Uid="ToggleEnableWinapp2"
+                                          Grid.Column="3"
                                           IsOn="{x:Bind ViewModel.EnableWinapp2, Mode=TwoWay}"
                                           OnContent="" OffContent=""
                                           MinWidth="0" Margin="0,0,-8,0"
@@ -200,7 +201,8 @@
                             </StackPanel>
 
                             <!-- Toggle -->
-                            <ToggleSwitch Grid.Column="3"
+                            <ToggleSwitch x:Uid="ToggleEnableWinapp3"
+                                          Grid.Column="3"
                                           IsOn="{x:Bind ViewModel.EnableWinapp3, Mode=TwoWay}"
                                           OnContent="" OffContent=""
                                           MinWidth="0" Margin="0,0,-8,0"
@@ -258,7 +260,8 @@
                             </StackPanel>
 
                             <!-- Toggle -->
-                            <ToggleSwitch Grid.Column="3"
+                            <ToggleSwitch x:Uid="ToggleEnableWinappx"
+                                          Grid.Column="3"
                                           IsOn="{x:Bind ViewModel.EnableWinappx, Mode=TwoWay}"
                                           OnContent="" OffContent=""
                                           MinWidth="0" Margin="0,0,-8,0"
@@ -348,7 +351,8 @@
                                    Style="{StaticResource FC_SubtextStyle}" />
                     </StackPanel>
 
-                    <ToggleSwitch Grid.Column="1"
+                    <ToggleSwitch x:Uid="TogglePostCleanEnabled"
+                                  Grid.Column="1"
                                   IsOn="{x:Bind ViewModel.PostCleanEnabled, Mode=TwoWay}"
                                   OnContent=""
                                   OffContent=""
@@ -391,7 +395,8 @@
                                    Style="{StaticResource FC_SubtextStyle}" />
                     </StackPanel>
 
-                    <ToggleSwitch Grid.Column="1"
+                    <ToggleSwitch x:Uid="ToggleGlobalExclusionsEnabled"
+                                  Grid.Column="1"
                                   IsOn="{x:Bind ViewModel.GlobalExclusionsEnabled, Mode=TwoWay}"
                                   OnContent=""
                                   OffContent=""
@@ -441,7 +446,8 @@
                                            FontSize="12"
                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                             </StackPanel>
-                            <ToggleSwitch Grid.Column="1"
+                            <ToggleSwitch x:Uid="ToggleCleanHistoryEnabled"
+                                          Grid.Column="1"
                                           IsOn="{x:Bind ViewModel.CleanHistoryEnabled, Mode=TwoWay}"
                                           OnContent="" OffContent="" MinWidth="0" />
                         </Grid>
