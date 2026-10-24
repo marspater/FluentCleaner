@@ -96,9 +96,15 @@ public class CleaningService(PathExpander? expander = null)
         }
     }
 
+    private static readonly EnumerationOptions SafeDirEnumOptions = new()
+    {
+        AttributesToSkip = FileAttributes.ReparsePoint,
+        IgnoreInaccessible = true
+    };
+
     /* Walks the tree once; lets the OS match files per pattern (FindFirstFile knows about
        8.3 short-name aliases, we don't). HashSet drops files that match more than one pattern.
-       Reparse points skipped to prevent infinite junction loop traps. */
+       Reparse points skipped via native OS enumeration options to prevent infinite junction loops. */
     private static IEnumerable<string> EnumerateFilesSafe(string root, string[] patterns, bool recurse, IProgress<string>? progress = null, CancellationToken token = default)
     {
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -118,8 +124,8 @@ public class CleaningService(PathExpander? expander = null)
         IEnumerable<string> dirs;
         try
         {
-            dirs = Directory.EnumerateDirectories(root)
-                            .Where(d => (File.GetAttributes(d) & FileAttributes.ReparsePoint) == 0);
+            // Delegate reparse point filtering and inaccessible directory skipping natively to the OS enumerator
+            dirs = Directory.EnumerateDirectories(root, "*", SafeDirEnumOptions);
         }
         catch (Exception ex) { Debug.WriteLine($"[CleaningService.EnumerateFilesSafe] Error enumerating directories in {root}: {ex.Message}"); yield break; }
 
@@ -282,19 +288,40 @@ public class CleaningService(PathExpander? expander = null)
             rules.Add(new ExclusionRule(p.TrimEnd('\\') + "\\", ex.Pattern));
     }
 
-    // Probe whether a file is deletable right now by requesting DELETE access via CreateFileW.
+    // Probe whether a file is deletable right now by requesting DELETE access via CreateFileW
+    // and read file length directly from open handle to eliminate FileInfo heap allocations and duplicate Win32 syscalls.
     private static long TryGetDeletableSize(string path)
     {
-        const uint DELETE = 0x00010000;
-        const uint FILE_SHARE_ALL = 0x7;   // Read | Write | Delete
-        const uint OPEN_EXISTING = 3;
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            const uint DELETE = 0x00010000;
+            const uint FILE_READ_ATTRIBUTES = 0x0080;
+            const uint FILE_SHARE_ALL = 0x7;   // Read | Write | Delete
+            const uint OPEN_EXISTING = 3;
 
-        using var handle = CreateFileW(path, DELETE, FILE_SHARE_ALL,
-                                       IntPtr.Zero, OPEN_EXISTING, 0, IntPtr.Zero);
-        if (handle.IsInvalid) return -1;   // locked; skip!
+            using var handle = CreateFileW(path, DELETE | FILE_READ_ATTRIBUTES, FILE_SHARE_ALL,
+                                           IntPtr.Zero, OPEN_EXISTING, 0, IntPtr.Zero);
+            if (handle.IsInvalid) return -1;   // locked; skip!
 
-        try { return new FileInfo(path).Length; }
-        catch (Exception ex) { Debug.WriteLine($"[CleaningService.TryGetDeletableSize] Failed to get length of {path}: {ex.Message}"); return -1; }
+            try { return RandomAccess.GetLength(handle); }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[CleaningService.TryGetDeletableSize] Failed to get length of {path}: {ex.Message}");
+                return -1;
+            }
+        }
+
+        // Graceful fallback for non-Windows platforms (e.g., unit test environments)
+        try
+        {
+            var fi = new FileInfo(path);
+            return fi.Exists ? fi.Length : -1;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[CleaningService.TryGetDeletableSize] Failed to get length of {path}: {ex.Message}");
+            return -1;
+        }
     }
 
     private static bool IsExcluded(string path, List<ExclusionRule> rules)
