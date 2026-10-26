@@ -13,6 +13,13 @@ namespace FluentCleaner.Services;
    Clean   ; takes the completed ScanResult and does the actual deleting. */
 public class CleaningService(PathExpander? expander = null)
 {
+    private static readonly EnumerationOptions ReparseSkipOptions = new()
+    {
+        AttributesToSkip = FileAttributes.ReparsePoint,
+        IgnoreInaccessible = true,
+        RecurseSubdirectories = false
+    };
+
     private readonly PathExpander _expander = expander ?? new();
 
     // --- Public API --------------------------------------------------
@@ -118,8 +125,7 @@ public class CleaningService(PathExpander? expander = null)
         IEnumerable<string> dirs;
         try
         {
-            dirs = Directory.EnumerateDirectories(root)
-                            .Where(d => (File.GetAttributes(d) & FileAttributes.ReparsePoint) == 0);
+            dirs = Directory.EnumerateDirectories(root, "*", ReparseSkipOptions);
         }
         catch (Exception ex) { Debug.WriteLine($"[CleaningService.EnumerateFilesSafe] Error enumerating directories in {root}: {ex.Message}"); yield break; }
 
@@ -279,21 +285,30 @@ public class CleaningService(PathExpander? expander = null)
     {
         if (ex.Type is ExcludeType.Reg) return;
         foreach (var p in _expander.ResolvePaths(ex.Path))
-            rules.Add(new ExclusionRule(p.TrimEnd('\\') + "\\", ex.Pattern));
+            rules.Add(new ExclusionRule(p.TrimEnd('\\', '/') + Path.DirectorySeparatorChar, ex.Pattern));
     }
 
     // Probe whether a file is deletable right now by requesting DELETE access via CreateFileW.
+    // Querying file size directly via RandomAccess.GetLength(handle) avoids creating
+    // FileInfo heap objects and issuing redundant GetFileAttributesExW Win32 syscalls.
     private static long TryGetDeletableSize(string path)
     {
         const uint DELETE = 0x00010000;
+        const uint FILE_READ_ATTRIBUTES = 0x0080;
         const uint FILE_SHARE_ALL = 0x7;   // Read | Write | Delete
         const uint OPEN_EXISTING = 3;
 
-        using var handle = CreateFileW(path, DELETE, FILE_SHARE_ALL,
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            try { return new FileInfo(path).Length; }
+            catch { return -1; }
+        }
+
+        using var handle = CreateFileW(path, DELETE | FILE_READ_ATTRIBUTES, FILE_SHARE_ALL,
                                        IntPtr.Zero, OPEN_EXISTING, 0, IntPtr.Zero);
         if (handle.IsInvalid) return -1;   // locked; skip!
 
-        try { return new FileInfo(path).Length; }
+        try { return RandomAccess.GetLength(handle); }
         catch (Exception ex) { Debug.WriteLine($"[CleaningService.TryGetDeletableSize] Failed to get length of {path}: {ex.Message}"); return -1; }
     }
 
