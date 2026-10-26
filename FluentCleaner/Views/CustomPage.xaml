@@ -117,6 +117,7 @@
                                              IsOn="{x:Bind IsEnabled, Mode=TwoWay}"
                                              HorizontalAlignment="Right"
                                              OnContent="" OffContent=""
+                                             AutomationProperties.Name="{x:Bind Name}"
                                              MinWidth="0"
                                              Visibility="{x:Bind IniVisibility}" />
                             </Grid>

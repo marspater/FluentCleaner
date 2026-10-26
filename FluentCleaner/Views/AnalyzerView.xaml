@@ -89,6 +89,7 @@
                                               Header="Use scanned folder size as baseline"
                                               IsOn="{x:Bind ViewModel.UseScannedRootPercentage, Mode=TwoWay}"
                                               OnContent="" OffContent=""
+                                              AutomationProperties.Name="Use scanned folder size as baseline"
                                               FontSize="12"
                                               MinWidth="0"
                                               VerticalAlignment="Center" />
