@@ -108,6 +108,32 @@ public class Winapp2ParserTests
     }
 
     [Fact]
+    public void Parse_ParsesMultipleNumberedKeysCorrectly()
+    {
+        var content = """
+                      [Test App]
+                      Detect=HKCU\Software\Test1
+                      Detect1=HKCU\Software\Test2
+                      DetectFile=%AppData%\Test1
+                      DetectFile1=%AppData%\Test2
+                      FileKey1=%AppData%\Test|*.tmp
+                      FileKey2=%AppData%\Test|*.log
+                      RegKey1=HKCU\Software\Test1
+                      RegKey2=HKCU\Software\Test2
+                      ExcludeKey1=FILE|%AppData%\Test|*.db
+                      ExcludeKey2=PATH|%AppData%\Test
+                      """;
+        var result = _parser.Parse(content);
+        Assert.Single(result);
+        var entry = result[0];
+        Assert.Equal(2, entry.DetectKeys.Count);
+        Assert.Equal(2, entry.DetectFiles.Count);
+        Assert.Equal(2, entry.FileKeys.Count);
+        Assert.Equal(2, entry.RegKeys.Count);
+        Assert.Equal(2, entry.ExcludeKeys.Count);
+    }
+
+    [Fact]
     public void Parse_StripsCommunityAsterisk()
     {
         var content = """
