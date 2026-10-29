@@ -130,6 +130,7 @@
                                                          Warning icon appears when HasWarning is true. -->
                                                     <CheckBox Grid.Column="0"
                                                               IsChecked="{x:Bind IsSelected, Mode=TwoWay}"
+                                                              AutomationProperties.Name="{x:Bind Name}"
                                                               ToolTipService.ToolTip="{x:Bind Warning}"
                                                               MinWidth="0"
                                                               Padding="6,3">
