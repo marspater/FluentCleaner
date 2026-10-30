@@ -129,6 +129,7 @@
                                                     <!-- Checkbox; Warning tooltip from Winapp2.ini Warning= field.
                                                          Warning icon appears when HasWarning is true. -->
                                                     <CheckBox Grid.Column="0"
+                                                              AutomationProperties.Name="{x:Bind Name}"
                                                               IsChecked="{x:Bind IsSelected, Mode=TwoWay}"
                                                               ToolTipService.ToolTip="{x:Bind Warning}"
                                                               MinWidth="0"
