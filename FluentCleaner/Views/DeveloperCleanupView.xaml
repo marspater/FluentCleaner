@@ -124,6 +124,7 @@
                                         </Grid.ColumnDefinitions>
                                         
                                         <CheckBox Grid.Column="0"
+                                                  AutomationProperties.Name="{x:Bind FolderName}"
                                                   IsChecked="{x:Bind IsSelected, Mode=TwoWay}"
                                                   VerticalAlignment="Center"
                                                   MinWidth="0"
