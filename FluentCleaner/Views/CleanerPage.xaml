@@ -130,6 +130,7 @@
                                                          Warning icon appears when HasWarning is true. -->
                                                     <CheckBox Grid.Column="0"
                                                               IsChecked="{x:Bind IsSelected, Mode=TwoWay}"
+                                                              AutomationProperties.Name="{x:Bind Name}"
                                                               ToolTipService.ToolTip="{x:Bind Warning}"
                                                               MinWidth="0"
                                                               Padding="6,3">
@@ -317,7 +318,9 @@
                                            Text="{x:Bind AppName}"
                                            FontSize="12"
                                            FontWeight="SemiBold"
-                                           TextTrimming="CharacterEllipsis" />
+                                           TextTrimming="CharacterEllipsis"
+                                           ToolTipService.ToolTip="{x:Bind AppName}"
+                                           AutomationProperties.Name="{x:Bind AppName}" />
 
                                 <!-- "3988 files · 2 registry" -->
                                 <TextBlock Grid.Row="1" Grid.Column="0"
@@ -377,6 +380,7 @@
                                 <TextBlock Text="{x:Bind Text}"
                                            FontSize="11"
                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           ToolTipService.ToolTip="{x:Bind Text}"
                                            TextTrimming="CharacterEllipsis"
                                            Visibility="{x:Bind IsNotHeader,
                                                Converter={StaticResource BoolToVisibilityConverter}}">

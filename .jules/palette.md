@@ -1,0 +1,3 @@
+## 2026-03-30 - Accessible CheckBox and Truncated List Items in WinUI 3 DataTemplates
+**Learning:** In WinUI 3, when a `CheckBox` contains complex visual children (such as a `StackPanel` with warning icons and text) or when `ListViewItem` content has `TextTrimming="CharacterEllipsis"`, screen readers (Narrator/NVDA) cannot automatically derive an accessible name, and users cannot inspect full truncated path names without opening external explorers.
+**Action:** Always set `AutomationProperties.Name="{x:Bind ...}"` directly on composite `CheckBox` elements and result headers within `DataTemplate` items, and add `ToolTipService.ToolTip="{x:Bind ...}"` to truncated text blocks to maintain accessibility and readability.
