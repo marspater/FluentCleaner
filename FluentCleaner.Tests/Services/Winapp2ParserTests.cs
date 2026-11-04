@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using FluentCleaner.Models;
 using FluentCleaner.Services;
@@ -105,6 +106,51 @@ public class Winapp2ParserTests
         Assert.Equal(ExcludeType.File, entry.ExcludeKeys[0].Type);
         Assert.Equal(@"%AppData%\Test", entry.ExcludeKeys[0].Path);
         Assert.Equal("*.db", entry.ExcludeKeys[0].Pattern);
+    }
+
+    [Fact]
+    public void Parse_ParsesMultiDigitKeysAndIgnoresMalformedKeySuffixes()
+    {
+        var content = """
+                      [Multi Digit App]
+                      Detect=HKCU\Software\Test
+                      Detect1=HKCU\Software\Test1
+                      DetectFile=C:\Test\detect.exe
+                      DetectFile2=C:\Test\detect2.exe
+                      FileKey1=C:\Path1|*.*
+                      FileKey10=C:\Path10|*.*
+                      FileKey=C:\InvalidFileKey|*.*
+                      FileKeyX=C:\InvalidFileKeyX|*.*
+                      RegKey1=HKCU\Software\Key1
+                      RegKey12=HKCU\Software\Key12
+                      RegKey=HKCU\Software\InvalidRegKey
+                      ExcludeKey1=FILE|C:\Ex1|*.*
+                      ExcludeKey99=PATH|C:\Ex99
+                      ExcludeKey=FILE|C:\InvalidEx|*.*
+                      """;
+        var result = _parser.Parse(content.AsSpan());
+        Assert.Single(result);
+        var entry = result[0];
+
+        Assert.Equal(2, entry.DetectKeys.Count);
+        Assert.Equal(@"HKCU\Software\Test", entry.DetectKeys[0]);
+        Assert.Equal(@"HKCU\Software\Test1", entry.DetectKeys[1]);
+
+        Assert.Equal(2, entry.DetectFiles.Count);
+        Assert.Equal(@"C:\Test\detect.exe", entry.DetectFiles[0]);
+        Assert.Equal(@"C:\Test\detect2.exe", entry.DetectFiles[1]);
+
+        Assert.Equal(2, entry.FileKeys.Count);
+        Assert.Equal(@"C:\Path1", entry.FileKeys[0].Path);
+        Assert.Equal(@"C:\Path10", entry.FileKeys[1].Path);
+
+        Assert.Equal(2, entry.RegKeys.Count);
+        Assert.Equal(@"HKCU\Software\Key1", entry.RegKeys[0].KeyPath);
+        Assert.Equal(@"HKCU\Software\Key12", entry.RegKeys[1].KeyPath);
+
+        Assert.Equal(2, entry.ExcludeKeys.Count);
+        Assert.Equal(@"C:\Ex1", entry.ExcludeKeys[0].Path);
+        Assert.Equal(@"C:\Ex99", entry.ExcludeKeys[1].Path);
     }
 
     [Fact]
