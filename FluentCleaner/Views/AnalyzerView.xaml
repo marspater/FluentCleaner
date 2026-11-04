@@ -152,7 +152,9 @@
                                         <!-- Name & Path -->
                                         <StackPanel Grid.Row="0" Grid.Column="1" VerticalAlignment="Center">
                                             <TextBlock Text="{x:Bind Name}" Style="{StaticResource FC_CardHeaderStyle}" />
-                                            <TextBlock Text="{x:Bind FullPath}" Style="{StaticResource FC_CaptionStyle}" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Text="{x:Bind FullPath}" Style="{StaticResource FC_CaptionStyle}"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       ToolTipService.ToolTip="{x:Bind FullPath}" />
                                         </StackPanel>
 
                                         <!-- Size Label -->
