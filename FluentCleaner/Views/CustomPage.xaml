@@ -114,6 +114,7 @@
                                 </Button>
 
                                 <ToggleSwitch Grid.Row="2"
+                                             AutomationProperties.Name="{x:Bind Name}"
                                              IsOn="{x:Bind IsEnabled, Mode=TwoWay}"
                                              HorizontalAlignment="Right"
                                              OnContent="" OffContent=""
