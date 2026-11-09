@@ -303,7 +303,8 @@
                         <DataTemplate x:DataType="vm:ScanResultLine">
                             <Grid Padding="12,7"
                                   BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
-                                  BorderThickness="0,0,0,1">
+                                  BorderThickness="0,0,0,1"
+                                  AutomationProperties.Name="{x:Bind Summary}">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" /> <!-- size + chevron -->
@@ -315,6 +316,7 @@
 
                                 <TextBlock Grid.Row="0" Grid.Column="0"
                                            Text="{x:Bind AppName}"
+                                           ToolTipService.ToolTip="{x:Bind AppName}"
                                            FontSize="12"
                                            FontWeight="SemiBold"
                                            TextTrimming="CharacterEllipsis" />
@@ -375,6 +377,8 @@
                                                Converter={StaticResource BoolToVisibilityConverter}}" />
                                 <!-- Path row: full file path or registry key -->
                                 <TextBlock Text="{x:Bind Text}"
+                                           ToolTipService.ToolTip="{x:Bind Text}"
+                                           AutomationProperties.Name="{x:Bind Text}"
                                            FontSize="11"
                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                            TextTrimming="CharacterEllipsis"
