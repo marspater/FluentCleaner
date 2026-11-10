@@ -125,12 +125,16 @@
                                         
                                         <CheckBox Grid.Column="0"
                                                   IsChecked="{x:Bind IsSelected, Mode=TwoWay}"
+                                                  AutomationProperties.Name="{x:Bind FolderName}"
+                                                  ToolTipService.ToolTip="{x:Bind Path}"
                                                   VerticalAlignment="Center"
                                                   MinWidth="0"
                                                   Padding="8,0,0,0">
                                             <StackPanel Spacing="1" VerticalAlignment="Center">
                                                 <TextBlock Text="{x:Bind FolderName}" Style="{StaticResource FC_CardHeaderStyle}" />
-                                                <TextBlock Text="{x:Bind ParentPath}" Style="{StaticResource FC_CaptionStyle}" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock Text="{x:Bind ParentPath}" Style="{StaticResource FC_CaptionStyle}"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           ToolTipService.ToolTip="{x:Bind ParentPath}" />
                                             </StackPanel>
                                         </CheckBox>
 
