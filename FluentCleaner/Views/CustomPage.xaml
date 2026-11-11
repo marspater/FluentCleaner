@@ -33,6 +33,11 @@
                        Style="{StaticResource FC_SubtextStyle}"
                        TextWrapping="WrapWholeWords" TextAlignment="Center"
                        MaxWidth="260" />
+            <Button x:Uid="BtnNewCleaner"
+                    Style="{StaticResource AccentButtonStyle}"
+                    Click="NewCleaner_Click"
+                    HorizontalAlignment="Center"
+                    Margin="0,4,0,0" />
         </StackPanel>
 
         <!-- card grid -->
@@ -115,6 +120,7 @@
 
                                 <ToggleSwitch Grid.Row="2"
                                              IsOn="{x:Bind IsEnabled, Mode=TwoWay}"
+                                             AutomationProperties.Name="{x:Bind Name}"
                                              HorizontalAlignment="Right"
                                              OnContent="" OffContent=""
                                              MinWidth="0"
