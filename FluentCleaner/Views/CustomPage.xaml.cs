@@ -209,6 +209,9 @@ public sealed partial class CustomPage : Page, IPageActions, ISearchablePage
 
     // --- New / Edit / Delete -----------------------------------------------
 
+    private async void NewCleaner_Click(object sender, RoutedEventArgs e) =>
+        await ShowEditorAsync(null);
+
     private async void Edit_Click(object sender, RoutedEventArgs e)
     {
         if (sender is MenuFlyoutItem { Tag: CustomEntryVm vm })
